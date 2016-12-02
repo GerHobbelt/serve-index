@@ -17,7 +17,7 @@ var accepts = require('accepts');
 var createError = require('http-errors');
 var debug = require('debug')('serve-index');
 var escapeHtml = require('escape-html');
-var fs = require('fs')
+var originalFs = require('fs')
   , path = require('path')
   , normalize = path.normalize
   , sep = path.sep
@@ -27,7 +27,7 @@ var Batch = require('batch');
 var mime = require('mime-types');
 var parseUrl = require('parseurl');
 var resolve = require('path').resolve;
-
+var fs = originalFs;
 /**
  * Module exports.
  * @public
@@ -82,6 +82,7 @@ var mediaType = {
 
 function serveIndex(root, options) {
   var opts = options || {};
+  fs = options.fs || originalFs;
 
   // root required
   if (!root) {
