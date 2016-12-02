@@ -17,7 +17,7 @@ var accepts = require('accepts');
 var createError = require('http-errors');
 var debug = require('debug')('serve-index');
 var escapeHtml = require('escape-html');
-var originalFs = require('fs')
+var fs = require('fs')
   , path = require('path')
   , normalize = path.normalize
   , sep = path.sep
@@ -27,7 +27,6 @@ var Batch = require('batch');
 var mime = require('mime-types');
 var parseUrl = require('parseurl');
 var resolve = require('path').resolve;
-var fs = originalFs;
 /**
  * Module exports.
  * @public
@@ -82,7 +81,7 @@ var mediaType = {
 
 function serveIndex(root, options) {
   var opts = options || {};
-  fs = options.fs || originalFs;
+  var customFs = options.fs || fs;
 
   // root required
   if (!root) {
@@ -131,7 +130,7 @@ function serveIndex(root, options) {
 
     // check if we have a directory
     debug('stat "%s"', path);
-    fs.stat(path, function(err, stat){
+    customFs.stat(path, function(err, stat){
       if (err && err.code === 'ENOENT') {
         return next();
       }
@@ -147,7 +146,7 @@ function serveIndex(root, options) {
 
       // fetch files
       debug('readdir "%s"', path);
-      fs.readdir(path, function(err, files){
+      customFs.readdir(path, function(err, files){
         if (err) return next(err);
         if (!hidden) files = removeHidden(files);
         if (filter) files = files.filter(function(filename, index, list) {
@@ -161,7 +160,7 @@ function serveIndex(root, options) {
 
         // not acceptable
         if (!type) return next(createError(406));
-        serveIndex[mediaType[type]](req, res, files, next, originalDir, showUp, icons, path, view, template, stylesheet);
+        serveIndex[mediaType[type]](req, res, files, next, originalDir, showUp, icons, path, view, template, stylesheet, customFs);
       });
     });
   };
@@ -171,7 +170,8 @@ function serveIndex(root, options) {
  * Respond with text/html.
  */
 
-serveIndex.html = function _html(req, res, files, next, dir, showUp, icons, path, view, template, stylesheet) {
+serveIndex.html = function _html(req, res, files, next, dir, showUp, icons, path, view, template, stylesheet, fs) {
+  fs = fs || require('fs');
   var render = typeof template !== 'function'
     ? createHtmlRender(template)
     : template
@@ -216,7 +216,7 @@ serveIndex.html = function _html(req, res, files, next, dir, showUp, icons, path
         res.end(buf);
       });
     });
-  });
+  }, fs);
 };
 
 /**
@@ -511,7 +511,7 @@ function removeHidden(files) {
  * in same order.
  */
 
-function stat(dir, files, cb) {
+function stat(dir, files, cb, fs) {
   var batch = new Batch();
 
   batch.concurrency(10);
