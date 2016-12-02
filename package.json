@@ -1,7 +1,7 @@
 {
   "name": "serve-index-plus",
   "description": "Serve directory listings",
-  "version": "1.8.0",
+  "version": "1.8.1",
   "authors": [
     "Douglas Christopher Wilson <doug@somethingdoug.com>",
     "Ling. <i@zeroling.com>"
