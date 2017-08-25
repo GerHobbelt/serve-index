@@ -1,18 +1,18 @@
 {
-  "name": "serve-index",
+  "name": "serve-directory",
   "description": "Serve directory listings",
-  "version": "1.9.0",
-  "author": "Douglas Christopher Wilson <doug@somethingdoug.com>",
+  "version": "1.0.0",
+  "author": "fisker Cheung <lionkay@gmail.com>",
   "license": "MIT",
-  "repository": "expressjs/serve-index",
+  "repository": "fisker/serve-directory",
   "dependencies": {
     "accepts": "~1.3.3",
     "batch": "0.6.1",
     "debug": "2.6.8",
-    "escape-html": "~1.0.3",
     "http-errors": "~1.6.1",
     "mime-types": "~2.1.15",
-    "parseurl": "~1.3.1"
+    "parseurl": "~1.3.1",
+    "lodash.template": "^4.4.0"
   },
   "devDependencies": {
     "after": "0.8.2",
