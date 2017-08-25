@@ -145,6 +145,8 @@ function getResonser(req) {
   return serveIndex.responser[resonseType];
 }
 
+serveIndex.utils = utils;
+
 serveIndex.responser = {
   'text/html': function(req, res, data, next) {
     utils.getFilesStats(data.directory, data.files, function(err, stats) {
@@ -157,7 +159,7 @@ serveIndex.responser = {
         return { 
           name: file, 
           ext: path.extname(file),
-          type: getFileMimeType(file),
+          type: utils.getFileMimeType(file),
           stat: stats[index]
         };
       });
