@@ -6,7 +6,7 @@ var path = require('path');
 var fs = require('fs');
 var loashTemplate = require('lodash.template');
 var Batch = require('batch');
-var mime = require('mime-types');
+var mimeLookup = require('mime-types').lookup;
 
 function createRender(template) {
   var compiled = loashTemplate(template);
@@ -81,8 +81,7 @@ function fileSort(a, b) {
 }
 
 function getFileMimeType(file) {
-  var ext = path.extname(file);
-  return mime.lookup(ext) || '';
+  return mimeLookup(file) || '';
 }
 
 module.exports = {

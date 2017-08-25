@@ -9,7 +9,6 @@
 
 'use strict';
 
-
 /**
  * Module dependencies.
  * @private
@@ -31,8 +30,6 @@ module.exports = serveIndex;
 /**
  * Media types and the map for content negotiation.
  */
-
-
 
 /**
  * Serve directory listings with the given `root` path.
@@ -62,8 +59,8 @@ function serveIndex(root, options) {
 
   // resolve root to absolute and normalize
   var rootPath = path.normalize(path.resolve(root) + path.sep);
-  
-  return function (req, res, next) {
+
+  return function(req, res, next) {
     if (req.method !== 'GET' && req.method !== 'HEAD') {
       res.statusCode = 'OPTIONS' === req.method ? 200 : 405;
       res.setHeader('Allow', 'GET, HEAD, OPTIONS');
@@ -104,14 +101,12 @@ function serveIndex(root, options) {
     var stat;
     try {
       var stat = fs.statSync(requestPath);
-    } catch(err) {
+    } catch (err) {
       if (err.code === 'ENOENT') {
         return next();
       }
 
-      err.status = err.code === 'ENAMETOOLONG'
-        ? 414
-        : 500;
+      err.status = err.code === 'ENAMETOOLONG' ? 414 : 500;
       return next(err);
     }
 
@@ -124,7 +119,7 @@ function serveIndex(root, options) {
     var files;
     try {
       files = fs.readdirSync(requestPath);
-    } catch(err) {
+    } catch (err) {
       return next(err);
     }
 
@@ -134,9 +129,9 @@ function serveIndex(root, options) {
       directory: requestPath,
       options: opts
     };
-    responser(req, res, data);
+    responser(req, res, data, next);
   };
-};
+}
 
 function getResonser(req) {
   var acceptMediaTypes = Object.keys(serveIndex.responser);
@@ -156,8 +151,8 @@ serveIndex.responser = {
 
       // combine the stats into the file list
       data.files = data.files.map(function(file, index) {
-        return { 
-          name: file, 
+        return {
+          name: file,
           ext: path.extname(file),
           type: utils.getFileMimeType(file),
           stat: stats[index]
@@ -189,4 +184,3 @@ serveIndex.responser = {
     utils.sendResponse(res, 'application/json', JSON.stringify(data.files));
   }
 };
-
