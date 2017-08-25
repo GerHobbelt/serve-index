@@ -1,7 +1,7 @@
 {
   "name": "serve-directory",
   "description": "Serve directory listings",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "author": "fisker Cheung <lionkay@gmail.com>",
   "license": "MIT",
   "repository": "fisker/serve-directory",
@@ -20,12 +20,6 @@
     "mocha": "2.5.3",
     "supertest": "1.1.0"
   },
-  "files": [
-    "public/",
-    "LICENSE",
-    "HISTORY.md",
-    "index.js"
-  ],
   "engines": {
     "node": ">= 0.8.0"
   },
