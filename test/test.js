@@ -288,9 +288,9 @@ describe('serveIndex(root)', function () {
       });
     });
 
-    describe('when setting a custom render function', function () {
-      it('should invoke function to render', function (done) {
-        var server = createServer(fixtures, {'render': function (data) {
+    describe('when setting a custom template function', function () {
+      it('should invoke function to template', function (done) {
+        var server = createServer(fixtures, {'template': function (data) {
           return 'This is a template.';
         }});
 
@@ -300,8 +300,8 @@ describe('serveIndex(root)', function () {
         .expect(200, 'This is a template.', done);
       });
 
-      // it('should handle render errors', function (done) {
-      //   var server = createServer(fixtures, {'render': function (data) {
+      // it('should handle template errors', function (done) {
+      //   var server = createServer(fixtures, {'template': function (data) {
       //     new Error('boom!');
       //   }});
 
@@ -312,7 +312,7 @@ describe('serveIndex(root)', function () {
       // });
 
       it('should provide "directory" local', function (done) {
-        var server = createServer(fixtures, {'render': function (data) {
+        var server = createServer(fixtures, {'template': function (data) {
           return JSON.stringify(data.directory);
         }});
 
@@ -323,7 +323,7 @@ describe('serveIndex(root)', function () {
       });
 
       it('should provide "fileList" local', function (done) {
-        var server = createServer(fixtures, {'render': function(data) {
+        var server = createServer(fixtures, {'template': function(data) {
           return JSON.stringify(data.files.map(function (file) {
             file.stat = file.stat instanceof fs.Stats;
             return {
@@ -341,7 +341,7 @@ describe('serveIndex(root)', function () {
       });
 
       it('should provide "path" local', function (done) {
-        var server = createServer(fixtures, {'render': function (data) {
+        var server = createServer(fixtures, {'template': function (data) {
           return JSON.stringify(data.path);
         }});
 

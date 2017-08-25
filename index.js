@@ -49,13 +49,7 @@ function serveIndex(root, options) {
 
   var opts = options || {};
 
-  if (typeof opts.render !== 'function') {
-    if (typeof opts.template === 'string') {
-      opts.render = utils.createRender(opts.template);
-    } else {
-      opts.render = utils.getDefaultRender();
-    }
-  }
+  opts.template = utils.createRender(opts.template);
 
   // resolve root to absolute and normalize
   var rootPath = path.normalize(path.resolve(root) + path.sep);
@@ -144,7 +138,7 @@ serveIndex.utils = utils;
 
 serveIndex.responser = {
   'text/html': function(req, res, data, next) {
-    var render = data.options.render;
+    var render = data.options.template;
     utils.getFilesStats(data.directory, data.files, function(err, stats) {
       if (err) {
         return next(err);

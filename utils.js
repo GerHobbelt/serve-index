@@ -8,18 +8,38 @@ var loashTemplate = require('lodash.template');
 var Batch = require('batch');
 var mimeLookup = require('mime-types').lookup;
 
-function createRender(template) {
-  var compiled = loashTemplate(template);
+function noop() {}
 
-  return function(data) {
-    return compiled(data).replace(/>\s+</g ,'><');
-  };
+function getType(obj) {
+  return Object.prototype.toString.call(obj).slice(8, -1);
+}
+
+function maybeFile(file) {
+  try {
+    return fs.readFileSync(path.resolve(file), 'utf-8');
+  } catch(err) {
+    return '';
+  }
+}
+
+function createRender(template) {
+  var type = getType(template);
+  if (type === 'Function') {
+    return template;
+  } else if (type === 'String') {
+    template = maybeFile(template) || template;
+    var compiled = loashTemplate(template);
+
+    return function(data) {
+      return compiled(data).replace(/>\s+</g ,'><');
+    };
+  }
+
+  return getDefaultRender();
 }
 
 function getDefaultRender() {
-  var templateFile = path.join(__dirname, 'public', 'directory.html');
-  var template = fs.readFileSync(templateFile, 'utf-8');
-  return createRender(template);
+  return createRender(path.join(__dirname, 'public', 'directory.html'));
 }
 
 
