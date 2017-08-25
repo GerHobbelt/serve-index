@@ -144,6 +144,7 @@ serveIndex.utils = utils;
 
 serveIndex.responser = {
   'text/html': function(req, res, data, next) {
+    var render = data.options.render;
     utils.getFilesStats(data.directory, data.files, function(err, stats) {
       if (err) {
         return next(err);
@@ -171,10 +172,19 @@ serveIndex.responser = {
         files: data.files,
         directory: data.requestDirectory,
         options: data.options,
-        package: packageInfo
+        package: packageInfo,
+        path: data.directory
       };
 
-      utils.sendResponse(res, 'text/html', data.options.render(renderData));
+      var body;
+      try {
+        body = render(renderData);
+      } catch(err) {
+        err.status = 500;
+        return next(err);
+      }
+
+      utils.sendResponse(res, 'text/html', body);
     });
   },
   'text/plain': function(req, res, data, next) {

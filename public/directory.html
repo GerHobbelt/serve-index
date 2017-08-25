@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Index of <%- directory%></title>
+  <style>body{word-break: break-all;word-wrap: break-word}table{width:100%}@media(max-width:768px){td:nth-child(n+2){display:none}}</style>
+</head>
+<body>
+  <h1>Index of <%- directory%></h1>
+  <hr>
+  <table>
+    <tbody>
+    <% if (directory !== '/') { %>
+      <tr>
+        <td colspan="4"><a href="../" title="Parent Directory">../</a></td>
+      </tr>
+    <% } %>
+
+    <%
+    files
+      .filter(function(file) {
+        return file.name.slice(0, 1) !== '.';
+      })
+      .forEach(function(file) {
+        if (file.stat.isDirectory()) {
+        %>
+          <tr>
+            <td colspan="4"><a href="<%= encodeURIComponent(file.name) %>/" title="<%- file.name%>"><%- file.name %>/</a></td>
+          </tr>
+        <%
+        } else {
+        %>
+          <tr>
+            <td><a href="<%= encodeURIComponent(file.name) %>" title="<%- file.name %>"><%- file.name %></a></td>
+            <td><%- file.type %></td>
+            <td><%- file.stat.size %></td>
+            <td><%- file.stat.mtime.toISOString() %></td>
+          </tr>
+        <%
+        }
+      })
+      ;
+    %>
+    </tbody>
+  </table>
+  <hr>
+  powered by <%- package.name%>@<%- package.version%>
+</body>
+</html>

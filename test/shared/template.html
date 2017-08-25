@@ -1,15 +1,50 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>listing directory {directory}</title>
-    <style>{style}</style>
+    <title>Index of <%- directory%></title>
+    <style><%= options.style %></style>
   </head>
   <body class="directory">
     <h1>This is the test template</h1>
-    <h2>directory {directory}</h2>
+    <h2>directory <%- directory%></h2>
     <div id="wrapper">
-      <h1>{linked-path}</h1>
-      {files}
+      <h1>directory <%- directory%></h1>
+      <hr>
+      <table>
+        <tbody>
+        <% if (directory !== '/') { %>
+          <tr>
+            <td colspan="4"><a href="../" title="Parent Directory">../</a></td>
+          </tr>
+        <% } %>
+
+        <%
+        files
+          .filter(function(file) {
+            return file.name.slice(0, 1) !== '.';
+          })
+          .forEach(function(file) {
+            if (file.stat.isDirectory()) {
+            %>
+              <tr>
+                <td colspan="4"><a href="<%= encodeURIComponent(file.name) %>/" title="<%- file.name%>"><%- file.name %>/</a></td>
+              </tr>
+            <%
+            } else {
+            %>
+              <tr>
+                <td><a href="<%= encodeURIComponent(file.name) %>" title="<%- file.name %>"><%- file.name %></a></td>
+                <td><%- file.type %></td>
+                <td><%- file.stat.size %></td>
+                <td><%- file.stat.mtime.toISOString() %></td>
+              </tr>
+            <%
+            }
+          })
+          ;
+        %>
+        </tbody>
+      </table>
     </div>
   </body>
 </html>
