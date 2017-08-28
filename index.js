@@ -18,7 +18,7 @@ var fs = require('fs');
 var path = require('path');
 var utils = require('./utils.js');
 
-var package = require('./package.json');
+var pkg;
 
 /**
  * Module exports.
@@ -158,11 +158,11 @@ serveDirectory.responser = {
       data.files.sort(utils.fileSort);
 
       var renderData = {
-        req: req,
+        request: req,
         files: data.files,
         pathname: data.pathname,
         options: data.options,
-        package: package
+        package: pkg || (pkg = require('./package.json'))
       };
 
       var body;
