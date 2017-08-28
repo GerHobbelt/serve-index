@@ -17,6 +17,7 @@ var debug = require('debug')('serve-index');
 var fs = require('fs');
 var path = require('path');
 var utils = require('./utils.js');
+var Promise = utils.Promise;
 
 var pkg;
 
@@ -149,13 +150,13 @@ serveDirectory.setResponser = function(type, render, neeeState) {
   serveDirectory.responser[type] = function(req, res, data, next) {
     render = render || utils.getDefaultRender(type);
 
-    if (neeeState) {
-      utils.getFilesStats(data, function(err, data) {
+    Promise.resolve(neeeState ? utils.getFilesStats(data) : data)
+      .then(function(data) {
         return sendRenderedData(res, data, next, type, render);
-      });    
-    } else {
-      sendRenderedData(res, data, next, type, render);
-    }
+      })
+      .catch(function(err) {
+        return next(err);
+      });
   };
 }
 

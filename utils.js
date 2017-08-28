@@ -7,6 +7,7 @@ var fs = require('fs');
 var loashTemplate = require('lodash.template');
 var Batch = require('batch');
 var mimeLookup = require('mime-types').lookup;
+var Promise = global.Promise || require('es6-promise').Promise;
 
 function noop() {}
 
@@ -117,29 +118,38 @@ function getFileMimeType(file) {
   return mimeLookup(file) || '';
 }
 
-function getFilesStats(data, callback) {
-  getFilesStatsBatch(data.directory, data.files, function(err, stats) {
-    if (err) {
-      return callback(err);
-    }
-
-    // combine the stats into the file list
-    data.files = data.files.map(function(file, index) {
-      return {
-        name: file,
-        ext: path.extname(file),
-        type: getFileMimeType(file),
-        stat: stats[index]
-      };
+function statPromise(file) {
+  return new Promise(function(resolve, reject) {
+    fs.stat(file, function(err, state) {
+      if (err) {
+        reject(err);
+      } else {
+        resolve(state);
+      }
     });
+  });
+}
 
+function getFilesStats(data, callback) {
+  var promises = data.files.map(function(file, index) {
+    return statPromise(path.join(data.directory, file))
+      .then(function(stat) {
+        // combine the stats into the file list
+        return {
+          name: file,
+          ext: path.extname(file),
+          type: getFileMimeType(file),
+          stat: stat
+        };
+      });
+  });
+
+
+  return Promise.all(promises).then(function(files) {
     // sort file list
-    data.files.sort(fileSort);
+    data.files = files.sort(fileSort);
 
-    delete data.directory;
-
-    callback(null, data);
-
+    return data;
   });
 }
 
@@ -152,5 +162,6 @@ module.exports = {
   getFilesStats: getFilesStats,
   fileSort: fileSort,
   getFileMimeType: getFileMimeType,
-  httpError: require('http-errors')
+  httpError: require('http-errors'),
+  Promise: Promise
 };
