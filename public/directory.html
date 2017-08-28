@@ -13,7 +13,10 @@
     <tbody>
     <% if (directory !== '/') { %>
       <tr>
-        <td colspan="4"><a href="../" title="Parent Directory">../</a></td>
+        <td><a href="../" title="Parent Directory">../</a></td>
+        <td></td>
+        <td></td>
+        <td></td>
       </tr>
     <% } %>
 
@@ -26,7 +29,10 @@
         if (file.stat.isDirectory()) {
         %>
           <tr>
-            <td colspan="4"><a href="<%= encodeURIComponent(file.name) %>/" title="<%- file.name%>"><%- file.name %>/</a></td>
+            <td><a href="<%= encodeURIComponent(file.name) %>/" title="<%- file.name%>"><%- file.name %>/</a></td>
+            <td></td>
+            <td></td>
+            <td></td>
           </tr>
         <%
         } else {

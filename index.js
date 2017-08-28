@@ -18,14 +18,14 @@ var fs = require('fs');
 var path = require('path');
 var utils = require('./utils.js');
 
-var packageInfo = require('./package.json');
+var package = require('./package.json');
 
 /**
  * Module exports.
  * @public
  */
 
-module.exports = serveIndex;
+module.exports = serveDirectory;
 
 /**
  * Media types and the map for content negotiation.
@@ -41,15 +41,13 @@ module.exports = serveIndex;
  * @return {Function} middleware
  * @public
  */
-function serveIndex(root, options) {
+function serveDirectory(root, options) {
   // root required
   if (!root) {
-    throw new TypeError('serveIndex() root path required');
+    throw new TypeError('serveDirectory() root path required');
   }
 
-  var opts = options || {};
-
-  opts.template = utils.createRender(opts.template);
+  options = options || {};
 
   // resolve root to absolute and normalize
   var rootPath = path.normalize(path.resolve(root) + path.sep);
@@ -67,7 +65,7 @@ function serveIndex(root, options) {
 
     if (pathname.slice(-1) !== '/') {
  	    res.writeHead(301, { 
-        Location: requestUrl.pathname + '/'
+        Location: pathname + '/'
       });
  	    res.end();
       return;
@@ -122,24 +120,25 @@ function serveIndex(root, options) {
       files: files.sort(),
       pathname: pathname,
       directory: directory,
-      options: opts
+      options: options,
+      render: utils.createRender(options.template)
     };
     responser(req, res, data, next);
   };
 }
 
 function getResonser(req) {
-  var acceptMediaTypes = Object.keys(serveIndex.responser);
+  var acceptMediaTypes = Object.keys(serveDirectory.responser);
 
   var resonseType = utils.getResonseType(req, acceptMediaTypes);
-  return serveIndex.responser[resonseType];
+  return serveDirectory.responser[resonseType];
 }
 
-serveIndex.utils = utils;
+serveDirectory.utils = utils;
 
-serveIndex.responser = {
+serveDirectory.responser = {
   'text/html': function(req, res, data, next) {
-    var render = data.options.template;
+    var render = data.render;
     utils.getFilesStats(data.directory, data.files, function(err, stats) {
       if (err) {
         return next(err);
@@ -159,13 +158,11 @@ serveIndex.responser = {
       data.files.sort(utils.fileSort);
 
       var renderData = {
-        request: req, // 兼容
         req: req,
         files: data.files,
-        directory: data.pathname, // 兼容
         pathname: data.pathname,
         options: data.options,
-        package: packageInfo
+        package: package
       };
 
       var body;
