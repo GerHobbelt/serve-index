@@ -50,7 +50,12 @@ function serveDirectory(root, options) {
   options = options || {};
 
   // resolve root to absolute and normalize
-  var rootPath = path.normalize(path.resolve(root) + path.sep);
+  root = path.normalize(path.resolve(root) + path.sep);
+    
+  if (options.template) {
+    var render = utils.createRender('text/html', options.template);
+    serveDirectory.setResponser('text/html', render, true);
+  }
 
   return function(req, res, next) {
     if (req.method !== 'GET' && req.method !== 'HEAD') {
@@ -72,20 +77,22 @@ function serveDirectory(root, options) {
     }
 
     pathname = decodeURIComponent(pathname);
+    
+    // null byte(s), bad request
+    if (~pathname.indexOf('\0')) return next(utils.httpError(400));
 
     // join / normalize from root dir
-    var directory = path.normalize(path.join(rootPath, pathname));
+    var directory = path.normalize(path.join(root, pathname));
 
-    // null byte(s), bad request
-    if (~directory.indexOf('\0')) return next(utils.httpError(400));
 
     // malicious path
-    if ((directory + path.sep).slice(0, rootPath.length) !== rootPath) {
+    if ((directory + path.sep).slice(0, root.length) !== root) {
       debug('malicious path "%s"', path);
       return next(utils.httpError(403));
     }
 
-    var responser = getResonser(req);
+    var responseType = getResonseType(req);
+    var responser = serveDirectory.responser[responseType];
     if (!responser) return next(utils.httpError(406));
 
     // check if we have a directory
@@ -116,70 +123,56 @@ function serveDirectory(root, options) {
       return next(err);
     }
 
+
     var data = {
-      files: files.sort(),
+      request: req,
+      files: files,
       pathname: pathname,
       directory: directory,
       options: options,
-      render: utils.createRender(options.template)
+      package: pkg || (pkg = require('./package.json'))
     };
     responser(req, res, data, next);
   };
 }
 
-function getResonser(req) {
+function getResonseType(req) {
   var acceptMediaTypes = Object.keys(serveDirectory.responser);
-
-  var resonseType = utils.getResonseType(req, acceptMediaTypes);
-  return serveDirectory.responser[resonseType];
+  return utils.getResonseType(req, acceptMediaTypes);
 }
 
 serveDirectory.utils = utils;
 
-serveDirectory.responser = {
-  'text/html': function(req, res, data, next) {
-    var render = data.render;
-    utils.getFilesStats(data.directory, data.files, function(err, stats) {
-      if (err) {
-        return next(err);
-      }
+serveDirectory.responser = {};
 
-      // combine the stats into the file list
-      data.files = data.files.map(function(file, index) {
-        return {
-          name: file,
-          ext: path.extname(file),
-          type: utils.getFileMimeType(file),
-          stat: stats[index]
-        };
-      });
+serveDirectory.setResponser = function(type, render, neeeState) {
+  serveDirectory.responser[type] = function(req, res, data, next) {
+    render = render || utils.getDefaultRender(type);
 
-      // sort file list
-      data.files.sort(utils.fileSort);
+    if (neeeState) {
+      utils.getFilesStats(data, function(err, data) {
+        return sendRenderedData(res, data, next, type, render);
+      });    
+    } else {
+      sendRenderedData(res, data, next, type, render);
+    }
+  };
+}
 
-      var renderData = {
-        request: req,
-        files: data.files,
-        pathname: data.pathname,
-        options: data.options,
-        package: pkg || (pkg = require('./package.json'))
-      };
-
-      var body;
-      try {
-        body = render(renderData);
-      } catch(err) {
-        err.status = 500;
-        return next(err);
-      }
-
-      utils.sendResponse(res, 'text/html', body);
-    });
-  },
-  'text/plain': function(req, res, data, next) {
-    utils.sendResponse(res, 'text/plain', data.files.join('\n') + '\n');
-  },
-  'application/json': function(req, res, data, next) {
-    utils.sendResponse(res, 'application/json', JSON.stringify(data.files));
+function sendRenderedData(res, data, next, type, render) {
+  var body;
+  try {
+    body = render(data);
+  } catch(err) {
+    err.status = 500;
+    return next(err);
   }
-};
+
+  utils.sendResponse(res, type, body);
+}
+
+serveDirectory.setResponser('text/html', undefined, true);
+serveDirectory.setResponser('text/plain');
+serveDirectory.setResponser('application/json');
+
+

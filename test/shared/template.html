@@ -1,18 +1,18 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>Index of <%- directory%></title>
+    <title>Index of <%- pathname%></title>
     <style><%= options.style %></style>
   </head>
   <body class="directory">
     <h1>This is the test template</h1>
-    <h2>directory <%- directory%></h2>
+    <h2>directory <%- pathname%></h2>
     <div id="wrapper">
-      <h1>directory <%- directory%></h1>
+      <h1>directory <%- pathname%></h1>
       <hr>
       <table>
         <tbody>
-        <% if (directory !== '/') { %>
+        <% if (pathname !== '/') { %>
           <tr>
             <td colspan="4"><a href="../" title="Parent Directory">../</a></td>
           </tr>

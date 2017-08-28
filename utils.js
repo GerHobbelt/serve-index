@@ -22,24 +22,37 @@ function maybeFile(file) {
   }
 }
 
-function createRender(template) {
-  var type = getType(template);
-  if (type === 'Function') {
-    return template;
-  } else if (type === 'String') {
-    template = maybeFile(template) || template;
-    var compiled = loashTemplate(template);
+function createRender(renderType, template) {
+  if (renderType === 'text/html') {
+    var type = getType(template);
+    if (type === 'Function') {
+      return template;
+    } else if (type === 'String') {
+      template = maybeFile(template) || template;
+      var compiled = loashTemplate(template);
 
+      return function(data) {
+        return compiled(data).replace(/>\s+</g ,'><');
+      };
+    }
+  }
+  return getDefaultRender(renderType);
+}
+
+function getDefaultRender(type) {
+  if (type === 'text/html') {
+    return createRender(type, path.join(__dirname, 'public', 'directory.html'));
+  } else if (type === 'text/plain') {
     return function(data) {
-      return compiled(data).replace(/>\s+</g ,'><');
+      return data.files.sort().join('\n') + '\n'
+    };
+  } else if (type === 'application/json') {
+    return function(data) {
+      return JSON.stringify(data.files.sort());
     };
   }
 
-  return getDefaultRender();
-}
-
-function getDefaultRender() {
-  return createRender(path.join(__dirname, 'public', 'directory.html'));
+  return noop;
 }
 
 
@@ -71,7 +84,7 @@ function sendResponse(res, type, body) {
  * in same order.
  */
 
-function getFilesStats(directory, files, callback) {
+function getFilesStatsBatch(directory, files, callback) {
   var batch = new Batch();
 
   batch.concurrency(10);
@@ -102,6 +115,32 @@ function fileSort(a, b) {
 
 function getFileMimeType(file) {
   return mimeLookup(file) || '';
+}
+
+function getFilesStats(data, callback) {
+  getFilesStatsBatch(data.directory, data.files, function(err, stats) {
+    if (err) {
+      return callback(err);
+    }
+
+    // combine the stats into the file list
+    data.files = data.files.map(function(file, index) {
+      return {
+        name: file,
+        ext: path.extname(file),
+        type: getFileMimeType(file),
+        stat: stats[index]
+      };
+    });
+
+    // sort file list
+    data.files.sort(fileSort);
+
+    delete data.directory;
+
+    callback(null, data);
+
+  });
 }
 
 module.exports = {

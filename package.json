@@ -1,7 +1,7 @@
 {
   "name": "serve-directory",
   "description": "Serve directory listings",
-  "version": "1.1.5",
+  "version": "1.1.6",
   "author": "fisker Cheung <lionkay@gmail.com>",
   "license": "MIT",
   "repository": "fisker/serve-directory",

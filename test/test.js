@@ -68,11 +68,19 @@ describe('serveIndex(root)', function () {
     .expect(405, done)
   })
 
+  it('should rediret when path not end with /', function (done) {
+    var server = createServer()
+
+    request(server)
+    .get('/users')
+    .expect(301, done)
+  })
+
   it('should deny path will NULL byte', function (done) {
     var server = createServer()
 
     request(server)
-    .get('/%00')
+    .get('/%00/')
     .expect(400, done)
   })
 
@@ -88,7 +96,7 @@ describe('serveIndex(root)', function () {
     var server = createServer()
 
     request(server)
-    .get('/bogus')
+    .get('/bogus/')
     .expect(404, 'Not Found', done)
   })
 
@@ -97,7 +105,7 @@ describe('serveIndex(root)', function () {
     var server = createServer()
 
     request(server)
-    .get('/' + path)
+    .get('/' + path + '/')
     .expect(414, done)
   })
 
@@ -105,7 +113,7 @@ describe('serveIndex(root)', function () {
     var server = createServer()
 
     request(server)
-    .get('/nums')
+    .get('/nums/')
     .expect(404, 'Not Found', done)
   })
 
@@ -289,6 +297,9 @@ describe('serveIndex(root)', function () {
     });
 
     describe('when setting a custom template function', function () {
+      // currently template option wukk alter responser
+      alterProperty(serveIndex.responser, 'text/html', serveIndex.responser['text/html']);
+
       it('should invoke function to template', function (done) {
         var server = createServer(fixtures, {'template': function (data) {
           return 'This is a template.';
@@ -311,9 +322,9 @@ describe('serveIndex(root)', function () {
       //   .expect(500, 'boom!', done);
       // });
 
-      it('should provide "directory" local', function (done) {
-        var server = createServer(fixtures, {'template': function (data) {
-          return JSON.stringify(data.directory);
+      it('should provide "pathname" local', function (done) {
+        var server = createServer(fixtures, {'template': function(data) {
+          return JSON.stringify(data.pathname);
         }});
 
         request(server)
@@ -322,7 +333,7 @@ describe('serveIndex(root)', function () {
         .expect(200, '"/users/"', done);
       });
 
-      it('should provide "fileList" local', function (done) {
+      it('should provide "files" local', function (done) {
         var server = createServer(fixtures, {'template': function(data) {
           return JSON.stringify(data.files.map(function (file) {
             file.stat = file.stat instanceof fs.Stats;
@@ -340,16 +351,16 @@ describe('serveIndex(root)', function () {
         .expect(200, done);
       });
 
-      it('should provide "path" local', function (done) {
-        var server = createServer(fixtures, {'template': function (data) {
-          return JSON.stringify(data.path);
-        }});
+      // it('should provide "path" local', function (done) {
+      //   var server = createServer(fixtures, {'template': function (data) {
+      //     return JSON.stringify(data.path);
+      //   }});
 
-        request(server)
-        .get('/users/')
-        .set('Accept', 'text/html')
-        .expect(200, JSON.stringify(path.join(fixtures, 'users/')), done);
-      });
+      //   request(server)
+      //   .get('/users/')
+      //   .set('Accept', 'text/html')
+      //   .expect(200, JSON.stringify(path.join(fixtures, 'users/')), done);
+      // });
     });
   });
 
@@ -360,7 +371,7 @@ describe('serveIndex(root)', function () {
       it('should get called with Accept: text/html', function (done) {
         var server = createServer()
 
-        serveIndex.responser['text/html'] = function (req, res, data) {
+        serveIndex.responser['text/html'] = function (req, res, data, next) {
           res.setHeader('Content-Type', 'text/html');
           res.end('called');
         }
@@ -393,7 +404,7 @@ describe('serveIndex(root)', function () {
 
         serveIndex.responser['text/html'] = function (req, res, data, next) {
           res.setHeader('Content-Type', 'text/html')
-          res.end('<b>' + data.requestDirectory + '</b>')
+          res.end('<b>' + data.pathname + '</b>')
         }
 
         request(server)
@@ -453,25 +464,6 @@ describe('serveIndex(root)', function () {
       .expect(/<a href="tobi.txt"/)
       .end(done);
     });
-
-    // it('should include link to parent directory', function (done) {
-    //   var server = createServer()
-
-    //   request(server)
-    //   .get('/users')
-    //   .end(function (err, res) {
-    //     if (err) return done(err);
-    //     var body = res.text.split('</h1>')[1];
-    //     var urls = body.split(/<a href="([^"]*)"/).filter(function(s, i){ return i%2; });
-    //     assert.deepEqual(urls, [
-    //       '/',
-    //       '/users/%23dir',
-    //       '/users/index.html',
-    //       '/users/tobi.txt'
-    //     ]);
-    //     done();
-    //   });
-    // });
 
     it('should work for directory with #', function (done) {
       var server = createServer()
