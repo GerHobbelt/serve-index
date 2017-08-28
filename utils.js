@@ -5,9 +5,22 @@ var parseUrl = require('parseurl');
 var path = require('path');
 var fs = require('fs');
 var loashTemplate = require('lodash.template');
-var Batch = require('batch');
 var mimeLookup = require('mime-types').lookup;
 var Promise = global.Promise || require('es6-promise').Promise;
+var httpError = require('http-errors');
+var promisify = require('util').promisify;
+
+var promisifyStat = promisify ? promisify(fs.stat) : function(file) {
+  return new Promise(function(resolve, reject) {
+    fs.stat(file, function(err, state) {
+      if (err) {
+        reject(err);
+      } else {
+        resolve(state);
+      }
+    });
+  });
+};
 
 function noop() {}
 
@@ -80,31 +93,6 @@ function sendResponse(res, type, body) {
   res.end(body, 'utf8')
 }
 
-/**
- * Stat all files and return array of stat
- * in same order.
- */
-
-function getFilesStatsBatch(directory, files, callback) {
-  var batch = new Batch();
-
-  batch.concurrency(10);
-
-  files.forEach(function(file){
-    batch.push(function(done){
-      fs.stat(path.join(directory, file), function(err, stat){
-        if (err && err.code !== 'ENOENT') return done(err);
-
-        // pass ENOENT as null stat, not error
-        done(null, stat || null);
-      });
-    });
-  });
-
-  batch.end(callback);
-}
-
-
 
 /**
  * Sort function for with directories first.
@@ -118,21 +106,14 @@ function getFileMimeType(file) {
   return mimeLookup(file) || '';
 }
 
-function statPromise(file) {
-  return new Promise(function(resolve, reject) {
-    fs.stat(file, function(err, state) {
-      if (err) {
-        reject(err);
-      } else {
-        resolve(state);
-      }
-    });
-  });
-}
 
-function getFilesStats(data, callback) {
-  var promises = data.files.map(function(file, index) {
-    return statPromise(path.join(data.directory, file))
+function getStats(data, callback) {
+  var promises = data.files.map(function(file) {
+    if (file.stat) {
+      return file;
+    }
+
+    return promisifyStat(path.join(data.directory, file))
       .then(function(stat) {
         // combine the stats into the file list
         return {
@@ -143,7 +124,6 @@ function getFilesStats(data, callback) {
         };
       });
   });
-
 
   return Promise.all(promises).then(function(files) {
     // sort file list
@@ -159,9 +139,9 @@ module.exports = {
   getResonseType: getResonseType,
   parseUrl: parseUrl,
   sendResponse: sendResponse,
-  getFilesStats: getFilesStats,
+  getStats: getStats,
   fileSort: fileSort,
   getFileMimeType: getFileMimeType,
-  httpError: require('http-errors'),
+  httpError: httpError,
   Promise: Promise
 };

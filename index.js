@@ -22,13 +22,6 @@ var Promise = utils.Promise;
 var pkg;
 
 /**
- * Module exports.
- * @public
- */
-
-module.exports = serveDirectory;
-
-/**
  * Media types and the map for content negotiation.
  */
 
@@ -133,7 +126,12 @@ function serveDirectory(root, options) {
       options: options,
       package: pkg || (pkg = require('./package.json'))
     };
-    responser(req, res, data, next);
+
+    Promise.resolve(responser(req, res, data))
+      .catch(function(err) {
+        err.status = 500;
+        next(err);
+      });
   };
 }
 
@@ -146,30 +144,16 @@ serveDirectory.utils = utils;
 
 serveDirectory.responser = {};
 
-serveDirectory.setResponser = function(type, render, neeeState) {
-  serveDirectory.responser[type] = function(req, res, data, next) {
-    render = render || utils.getDefaultRender(type);
 
-    Promise.resolve(neeeState ? utils.getFilesStats(data) : data)
+serveDirectory.setResponser = function(type, render, neeeState) {
+  render = render || utils.getDefaultRender(type);
+  
+  serveDirectory.responser[type] = function(req, res, data) {
+    return Promise.resolve(neeeState ? utils.getStats(data) : data)
       .then(function(data) {
-        return sendRenderedData(res, data, next, type, render);
-      })
-      .catch(function(err) {
-        return next(err);
+        utils.sendResponse(res, type, render(data));
       });
   };
-}
-
-function sendRenderedData(res, data, next, type, render) {
-  var body;
-  try {
-    body = render(data);
-  } catch(err) {
-    err.status = 500;
-    return next(err);
-  }
-
-  utils.sendResponse(res, type, body);
 }
 
 serveDirectory.setResponser('text/html', undefined, true);
@@ -177,3 +161,9 @@ serveDirectory.setResponser('text/plain');
 serveDirectory.setResponser('application/json');
 
 
+/**
+ * Module exports.
+ * @public
+ */
+
+module.exports = serveDirectory;
