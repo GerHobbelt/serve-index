@@ -63,25 +63,26 @@ function serveIndex(root, options) {
       return;
     }
 
-    var requestUrl = utils.parseUrl(req);
-    var originalUrl = utils.parseUrl.original(req);
+    var pathname = utils.parseUrl.original(req).pathname;
 
-    var requestDirectory = decodeURIComponent(requestUrl.pathname);
-
-    if (requestDirectory.slice(-1) !== '/') {
-      requestDirectory += '/';
+    if (pathname.slice(-1) !== '/') {
+ 	    res.writeHead(301, { 
+        Location: requestUrl.pathname + '/'
+      });
+ 	    res.end();
+      return;
     }
 
-    var originalDirectory = decodeURIComponent(originalUrl.pathname);
+    pathname = decodeURIComponent(pathname);
 
     // join / normalize from root dir
-    var requestPath = path.normalize(path.join(rootPath, requestDirectory));
+    var directory = path.normalize(path.join(rootPath, pathname));
 
     // null byte(s), bad request
-    if (~requestPath.indexOf('\0')) return next(utils.httpError(400));
+    if (~directory.indexOf('\0')) return next(utils.httpError(400));
 
     // malicious path
-    if ((requestPath + path.sep).slice(0, rootPath.length) !== rootPath) {
+    if ((directory + path.sep).slice(0, rootPath.length) !== rootPath) {
       debug('malicious path "%s"', path);
       return next(utils.httpError(403));
     }
@@ -90,11 +91,11 @@ function serveIndex(root, options) {
     if (!responser) return next(utils.httpError(406));
 
     // check if we have a directory
-    debug('stat "%s"', requestPath);
+    debug('stat "%s"', directory);
 
     var stat;
     try {
-      var stat = fs.statSync(requestPath);
+      var stat = fs.statSync(directory);
     } catch (err) {
       if (err.code === 'ENOENT') {
         return next();
@@ -109,18 +110,18 @@ function serveIndex(root, options) {
     }
 
     // fetch files
-    debug('readdir "%s"', requestPath);
+    debug('readdir "%s"', directory);
     var files;
     try {
-      files = fs.readdirSync(requestPath);
+      files = fs.readdirSync(directory);
     } catch (err) {
       return next(err);
     }
 
     var data = {
       files: files.sort(),
-      requestDirectory: requestDirectory,
-      directory: requestPath,
+      pathname: pathname,
+      directory: directory,
       options: opts
     };
     responser(req, res, data, next);
@@ -158,16 +159,13 @@ serveIndex.responser = {
       data.files.sort(utils.fileSort);
 
       var renderData = {
-        request: {
-          headers: req.headers,
-          url: req.url,
-          method: req.method
-        },
+        request: req, // 兼容
+        req: req,
         files: data.files,
-        directory: data.requestDirectory,
+        directory: data.pathname, // 兼容
+        pathname: data.pathname,
         options: data.options,
-        package: packageInfo,
-        path: data.directory
+        package: packageInfo
       };
 
       var body;
