@@ -21,6 +21,23 @@ var Promise = utils.Promise;
 
 var pkg;
 
+var defaultRenders = {
+  'text/html': utils.render(path.join(__dirname, 'public', 'directory.html')),
+  'text/plain': {
+    render: function(data) {
+      return data.files.sort().join('\n') + '\n'
+    },
+    stat: false
+  },
+  'application/json': {
+    render: function(data) {
+      return JSON.stringify(data.files.sort())
+    },
+    stat: false
+  },
+}
+
+
 /**
  * Media types and the map for content negotiation.
  */
@@ -86,7 +103,7 @@ function serveDirectory(root, options) {
     }
 
     var responseType = getResonseType(req);
-    var responser = serveDirectory.responser[responseType];
+    var responser = responsers[responseType];
     if (!responser) return next(utils.httpError(406));
 
     // check if we have a directory
@@ -137,38 +154,24 @@ function serveDirectory(root, options) {
 
 
 function getResonseType(req) {
-  var acceptMediaTypes = Object.keys(serveDirectory.responser);
+  var acceptMediaTypes = Object.keys(responsers);
   return utils.getResonseType(req, acceptMediaTypes);
 }
 
 serveDirectory.utils = utils;
 
-serveDirectory.responser = {};
 
-var defaultRenders = {
-  'text/html': utils.render(path.join(__dirname, 'public', 'directory.html')),
-  'text/plain': {
-    render: function(data) {
-      return data.files.sort().join('\n') + '\n'
-    },
-    stat: false
-  },
-  'application/json': {
-    render: function(data) {
-      return JSON.stringify(data.files.sort())
-    },
-    stat: false
-  },
-}
-
-serveDirectory.setResponser = function(type, render) {
+var setResponser = serveDirectory.setResponser = function(type, render) {
   render = render || defaultRenders[type];
   
-  serveDirectory.responser[type] = utils.responser(type, render);
+  responsers[type] = utils.responser(type, render);
 };
 
+
+var responsers = serveDirectory.responser = {};
+
 Object.keys(defaultRenders).forEach(function(type) {
-  serveDirectory.setResponser(type);
+  setResponser(type, defaultRenders[type]);
 });
 
 /**
