@@ -18,25 +18,12 @@ var fs = require('fs');
 var path = require('path');
 var utils = require('./utils.js');
 var Promise = utils.Promise;
-var Conection = require('./lib/conection')
+var Conection = require('./lib/conection.js')
+var ServeDirectory = require('./lib/serve-directory.js')
 
 var pkg;
 
-var defaultRenders = {
-  'text/html': utils.render(path.join(__dirname, 'public', 'directory.html')),
-  'text/plain': {
-    render: function(data) {
-      return data.files.sort().join('\n') + '\n'
-    },
-    stat: false
-  },
-  'application/json': {
-    render: function(data) {
-      return JSON.stringify(data.files.sort())
-    },
-    stat: false
-  },
-}
+
 
 
 /**
@@ -54,23 +41,11 @@ var defaultRenders = {
  * @public
  */
 function serveDirectory(root, options) {
-  // root required
-  if (!root) {
-    throw new TypeError('serveDirectory() root path required')
-  }
 
-  options = options || {}
-
-  // resolve root to absolute and normalize
-  root = path.normalize(path.resolve(root) + path.sep);
-    
-  if (options.template) {
-    var render = utils.render(options.template);
-    serveDirectory.setResponser('text/html', render);
-  }
+  var sd = new ServeDirectory(root, options);
 
   return function(req, res, next) {
-    var conection = new Conection(root, responsers, req, res, next)
+    var conection = new Conection(sd.root, sd.responsers, req, res, next)
     
     pkg = pkg || (pkg = require('./package.json'))
     conection.response(options, pkg)
@@ -78,20 +53,6 @@ function serveDirectory(root, options) {
 }
 
 serveDirectory.utils = utils;
-
-
-var setResponser = serveDirectory.setResponser = function(type, render) {
-  render = render || defaultRenders[type];
-  
-  responsers[type] = utils.responser(type, render);
-};
-
-
-var responsers = serveDirectory.responser = {};
-
-Object.keys(defaultRenders).forEach(function(type) {
-  setResponser(type, defaultRenders[type]);
-});
 
 /**
  * Module exports.

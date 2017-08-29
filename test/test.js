@@ -297,8 +297,6 @@ describe('serveIndex(root)', function () {
     });
 
     describe('when setting a custom template function', function () {
-      // currently template option wukk alter responser
-      alterProperty(serveIndex.responser, 'text/html', serveIndex.responser['text/html']);
 
       it('should invoke function to template', function (done) {
         var server = createServer(fixtures, {'template': function (data) {
@@ -366,15 +364,13 @@ describe('serveIndex(root)', function () {
 
   describe('when using custom responser', function () {
     describe('exports.html', function () {
-      alterProperty(serveIndex.responser, 'text/html', serveIndex.responser['text/html'])
-
       it('should get called with Accept: text/html', function (done) {
-        var server = createServer()
-
-        serveIndex.responser['text/html'] = function (req, res, data, next) {
-          res.setHeader('Content-Type', 'text/html');
-          res.end('called');
-        }
+        var server = createServer(fixtures, {
+          responser: function (req, res, data, next) {
+            res.setHeader('Content-Type', 'text/html');
+            res.end('called');
+          }
+        })
 
         request(server)
         .get('/')
@@ -383,15 +379,15 @@ describe('serveIndex(root)', function () {
       });
 
       it('should get file list', function (done) {
-        var server = createServer()
-
-        serveIndex.responser['text/html'] = function(req, res, data) {
-          var text = data.files
-            .filter(function (f) { return /\.txt$/.test(f) })
-            .sort()
-          res.setHeader('Content-Type', 'text/html')
-          res.end('<b>' + text.length + ' text files</b>')
-        }
+        var server = createServer(fixtures, {
+          responser: function (req, res, data, next) {
+            var text = data.files
+              .filter(function (f) { return /\.txt$/.test(f) })
+              .sort()
+            res.setHeader('Content-Type', 'text/html')
+            res.end('<b>' + text.length + ' text files</b>')
+          }
+        });
 
         request(server)
         .get('/')
@@ -400,12 +396,12 @@ describe('serveIndex(root)', function () {
       });
 
       it('should get dir name', function (done) {
-        var server = createServer()
-
-        serveIndex.responser['text/html'] = function (req, res, data, next) {
-          res.setHeader('Content-Type', 'text/html')
-          res.end('<b>' + data.pathname + '</b>')
-        }
+        var server = createServer(fixtures, {
+          responser: function (req, res, data, next) {
+            res.setHeader('Content-Type', 'text/html')
+            res.end('<b>' + data.pathname + '</b>')
+          }
+        });
 
         request(server)
         .get('/users/')
@@ -415,15 +411,16 @@ describe('serveIndex(root)', function () {
     });
 
     describe('exports.plain', function () {
-      alterProperty(serveIndex.responser, 'text/plain', serveIndex.responser['text/plain'])
 
       it('should get called with Accept: text/plain', function (done) {
-        var server = createServer()
-
-        serveIndex.responser['text/plain'] = function (req, res, files) {
-          res.setHeader('Content-Type', 'text/plain');
-          res.end('called');
-        }
+        var server = createServer(fixtures, {
+          'text/plain': {
+            responser: function (req, res, data, next) {
+              res.setHeader('Content-Type', 'text/plain');
+              res.end('called');
+            }
+          }
+        });
 
         request(server)
         .get('/')
@@ -433,15 +430,16 @@ describe('serveIndex(root)', function () {
     });
 
     describe('exports.json', function () {
-      alterProperty(serveIndex.responser, 'application/json', serveIndex.responser['application/json'])
 
       it('should get called with Accept: application/json', function (done) {
-        var server = createServer()
-
-        serveIndex.responser['application/json'] = function (req, res, files) {
-          res.setHeader('Content-Type', 'application/json');
-          res.end('"called"');
-        }
+        var server = createServer(fixtures, {
+          'application/json': {
+            responser: function (req, res, data, next) {
+              res.setHeader('Content-Type', 'application/json');
+              res.end('"called"');
+            }
+          }
+        });
 
         request(server)
         .get('/')

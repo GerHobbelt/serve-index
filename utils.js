@@ -61,19 +61,11 @@ function render(template) {
   return noop;
 }
 
-function responser(responseType, render) {
-  if (type(render) === 'Function') {
-    render = {
-      render: render,
-      stat: true
-    }
-  }
-
-
+function responser(responseType, render, stat) {
   return function(req, res, data) {
-    return Promise.resolve(render.stat ? getStats(data) : data)
+    return Promise.resolve(stat ? getStats(data) : data)
       .then(function(data) {
-        sendResponse(res, responseType, render.render(data));
+        sendResponse(res, responseType, render(data));
       });
   }
 }
