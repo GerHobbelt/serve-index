@@ -8,7 +8,6 @@ var path = require('path');
 var fs = require('fs');
 var loashTemplate = require('lodash.template');
 var mimeLookup = require('mime-types').lookup;
-var Promise = global.Promise || require('es6-promise').Promise;
 var httpError = require('http-errors');
 
 var slice = Array.prototype.slice;
@@ -16,25 +15,6 @@ var toArray = Array.from || function(obj) {
   return slice.call(obj);
 };
 var toString = Object.prototype.toString;
-
-var promisify = require('util').promisify || function(fn) {
-  return function() {
-    var args = toArray(arguments);
-    var oThis = this;
-    return new Promise(function(resolve, reject) {
-      args.push(function(err, data) {
-        if (err) {
-          reject(err);
-        } else {
-          resolve(data);
-        }
-      });
-      fn.apply(oThis, args);
-    });
-  };
-};
-
-var stat = promisify(fs.stat);
 
 function noop() {}
 
@@ -61,16 +41,13 @@ function render(template) {
   return noop;
 }
 
-function responser(responseType, render, stat) {
+function responser(mime, render) {
   return function(req, res, data) {
-    return Promise.resolve(stat ? getStats(data) : data)
-      .then(function(data) {
-        sendResponse(res, responseType, render(data));
-      });
+    sendResponse(res, mime, render(data));
   }
 }
 
-function getResonseType(req, mediaTypes) {
+function getResponseType(req, mediaTypes) {
   var accept = accepts(req)
   return accept.type(mediaTypes)
 }
@@ -116,37 +93,21 @@ function getFileMimeType(file) {
 }
 
 
-function getStats(data, callback) {
-  var promises = data.files.map(function(file) {
-    if (file.stat) {
-      return file
+function getStats(directory, files) {
+  return files.map(function(file) {
+    var stat = fs.statSync(path.join(directory, file))
+    return {
+      name: file,
+      stat: stat
     }
-
-    return stat(path.join(data.directory, file))
-      .then(function(stat) {
-        // combine the stats into the file list
-        return {
-          name: file,
-          ext: path.extname(file),
-          type: getFileMimeType(file),
-          stat: stat
-        }
-      })
-  })
-
-  return Promise.all(promises).then(function(files) {
-    // sort file list
-    data.files = files.sort(fileSort);
-
-    return data;
-  })
+  }).sort(fileSort)
 }
 
 var _ = module.exports = {
   type: type,
   render: render,
   responser: responser,
-  getResonseType: getResonseType,
+  getResponseType: getResponseType,
   parseUrl: parseUrl,
   sendResponse: sendResponse,
   getStats: getStats,

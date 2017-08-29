@@ -386,7 +386,8 @@ describe('serveIndex(root)', function () {
               .sort()
             res.setHeader('Content-Type', 'text/html')
             res.end('<b>' + text.length + ' text files</b>')
-          }
+          },
+          stat: false
         });
 
         request(server)

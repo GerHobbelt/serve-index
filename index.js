@@ -14,14 +14,10 @@
  * @private
  */
 var debug = require('debug')('serve-index');
-var fs = require('fs');
-var path = require('path');
 var utils = require('./utils.js');
-var Promise = utils.Promise;
 var Conection = require('./lib/conection.js')
 var ServeDirectory = require('./lib/serve-directory.js')
-
-var pkg;
+var pkg
 
 
 
@@ -41,14 +37,13 @@ var pkg;
  * @public
  */
 function serveDirectory(root, options) {
-
   var sd = new ServeDirectory(root, options);
 
   return function(req, res, next) {
     var conection = new Conection(sd.root, sd.responsers, req, res, next)
     
     pkg = pkg || (pkg = require('./package.json'))
-    conection.response(options, pkg)
+    conection.response(sd.options, pkg)
   }
 }
 
