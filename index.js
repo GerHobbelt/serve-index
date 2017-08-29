@@ -47,8 +47,8 @@ function serveDirectory(root, options) {
   root = path.normalize(path.resolve(root) + path.sep);
     
   if (options.template) {
-    var render = utils.createRender('text/html', options.template);
-    serveDirectory.setResponser('text/html', render, true);
+    var render = utils.render(options.template);
+    serveDirectory.setResponser('text/html', render);
   }
 
   return function(req, res, next) {
@@ -135,6 +135,7 @@ function serveDirectory(root, options) {
   };
 }
 
+
 function getResonseType(req) {
   var acceptMediaTypes = Object.keys(serveDirectory.responser);
   return utils.getResonseType(req, acceptMediaTypes);
@@ -144,22 +145,31 @@ serveDirectory.utils = utils;
 
 serveDirectory.responser = {};
 
-
-serveDirectory.setResponser = function(type, render, neeeState) {
-  render = render || utils.getDefaultRender(type);
-  
-  serveDirectory.responser[type] = function(req, res, data) {
-    return Promise.resolve(neeeState ? utils.getStats(data) : data)
-      .then(function(data) {
-        utils.sendResponse(res, type, render(data));
-      });
-  };
+var defaultRenders = {
+  'text/html': utils.render(path.join(__dirname, 'public', 'directory.html')),
+  'text/plain': {
+    render: function(data) {
+      return data.files.sort().join('\n') + '\n'
+    },
+    stat: false
+  },
+  'application/json': {
+    render: function(data) {
+      return JSON.stringify(data.files.sort())
+    },
+    stat: false
+  },
 }
 
-serveDirectory.setResponser('text/html', undefined, true);
-serveDirectory.setResponser('text/plain');
-serveDirectory.setResponser('application/json');
+serveDirectory.setResponser = function(type, render) {
+  render = render || defaultRenders[type];
+  
+  serveDirectory.responser[type] = utils.responser(type, render);
+};
 
+Object.keys(defaultRenders).forEach(function(type) {
+  serveDirectory.setResponser(type);
+});
 
 /**
  * Module exports.

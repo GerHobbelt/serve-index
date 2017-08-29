@@ -1,5 +1,7 @@
 'use strict';
 
+var ENCODING = 'utf-8';
+
 var accepts = require('accepts');
 var parseUrl = require('parseurl');
 var path = require('path');
@@ -8,72 +10,76 @@ var loashTemplate = require('lodash.template');
 var mimeLookup = require('mime-types').lookup;
 var Promise = global.Promise || require('es6-promise').Promise;
 var httpError = require('http-errors');
-var promisify = require('util').promisify;
 
-var promisifyStat = promisify ? promisify(fs.stat) : function(file) {
-  return new Promise(function(resolve, reject) {
-    fs.stat(file, function(err, state) {
-      if (err) {
-        reject(err);
-      } else {
-        resolve(state);
-      }
-    });
-  });
+var slice = Array.prototype.slice;
+var toArray = Array.from || function(obj) {
+  return slice.call(obj);
 };
+var toString = Object.prototype.toString;
+
+var promisify = require('util').promisify || function(fn) {
+  return function() {
+    var args = toArray(arguments);
+    var oThis = this;
+    return new Promise(function(resolve, reject) {
+      args.push(function(err, data) {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(data);
+        }
+      });
+      fn.apply(oThis, args);
+    });
+  };
+};
+
+var stat = promisify(fs.stat);
 
 function noop() {}
 
-function getType(obj) {
-  return Object.prototype.toString.call(obj).slice(8, -1);
+function type(obj) {
+  return toString.call(obj).slice(8, -1);
 }
 
 function maybeFile(file) {
   try {
-    return fs.readFileSync(path.resolve(file), 'utf-8');
+    return fs.readFileSync(path.resolve(file), ENCODING);
   } catch(err) {
     return '';
   }
 }
 
-function createRender(renderType, template) {
-  if (renderType === 'text/html') {
-    var type = getType(template);
-    if (type === 'Function') {
-      return template;
-    } else if (type === 'String') {
-      template = maybeFile(template) || template;
-      var compiled = loashTemplate(template);
-
-      return function(data) {
-        return compiled(data).replace(/>\s+</g ,'><');
-      };
-    }
-  }
-  return getDefaultRender(renderType);
-}
-
-function getDefaultRender(type) {
-  if (type === 'text/html') {
-    return createRender(type, path.join(__dirname, 'public', 'directory.html'));
-  } else if (type === 'text/plain') {
-    return function(data) {
-      return data.files.sort().join('\n') + '\n'
-    };
-  } else if (type === 'application/json') {
-    return function(data) {
-      return JSON.stringify(data.files.sort());
-    };
+function render(template) {
+  var templateType = type(template);
+  if (templateType === 'Function') {
+    return template;
+  } else if (templateType === 'String') {
+    return loashTemplate(maybeFile(template) || template, {imports: _});
   }
 
   return noop;
 }
 
+function responser(responseType, render) {
+  if (type(render) === 'Function') {
+    render = {
+      render: render,
+      stat: true
+    }
+  }
+
+  return function(req, res, data) {
+    return Promise.resolve(render.stat ? getStats(data) : data)
+      .then(function(data) {
+        sendResponse(res, responseType, render.render(data));
+      });
+  }
+}
 
 function getResonseType(req, mediaTypes) {
-  var accept = accepts(req);
-  var type = accept.type(mediaTypes);
-  return type;
+  var accept = accepts(req)
+  return accept.type(mediaTypes)
 }
 
 /**
@@ -86,34 +92,44 @@ function sendResponse(res, type, body) {
   res.setHeader('X-Content-Type-Options', 'nosniff')
 
   // standard headers
-  res.setHeader('Content-Type', type + '; charset=utf-8')
-  res.setHeader('Content-Length', Buffer.byteLength(body, 'utf8'))
+  res.setHeader('Content-Type', type + '; charset=' + ENCODING)
+  res.setHeader('Content-Length', Buffer.byteLength(body, ENCODING))
 
   // body
-  res.end(body, 'utf8')
+  res.end(body, ENCODING)
 }
 
+function directoryFirst(a, b) {
+  return b.stat.isDirectory() - a.stat.isDirectory()
+}
+
+function sortByName(a, b) {
+  return a.name.localeCompare(b.name)
+}
+
+function notHidden(file) {
+  return file.name.slice(0, 1) !== '.'
+}
 
 /**
  * Sort function for with directories first.
  */
 function fileSort(a, b) {
-  return b.stat.isDirectory() - a.stat.isDirectory() || 
-    a.name.localeCompare(b.name);
+  return directoryFirst(a, b) || sortByName(a, b)
 }
 
 function getFileMimeType(file) {
-  return mimeLookup(file) || '';
+  return mimeLookup(file) || ''
 }
 
 
 function getStats(data, callback) {
   var promises = data.files.map(function(file) {
     if (file.stat) {
-      return file;
+      return file
     }
 
-    return promisifyStat(path.join(data.directory, file))
+    return stat(path.join(data.directory, file))
       .then(function(stat) {
         // combine the stats into the file list
         return {
@@ -121,21 +137,22 @@ function getStats(data, callback) {
           ext: path.extname(file),
           type: getFileMimeType(file),
           stat: stat
-        };
-      });
-  });
+        }
+      })
+  })
 
   return Promise.all(promises).then(function(files) {
     // sort file list
     data.files = files.sort(fileSort);
 
     return data;
-  });
+  })
 }
 
-module.exports = {
-  createRender: createRender,
-  getDefaultRender: getDefaultRender,
+var _ = module.exports = {
+  type: type,
+  render: render,
+  responser: responser,
   getResonseType: getResonseType,
   parseUrl: parseUrl,
   sendResponse: sendResponse,
@@ -143,5 +160,6 @@ module.exports = {
   fileSort: fileSort,
   getFileMimeType: getFileMimeType,
   httpError: httpError,
+  notHidden: notHidden,
   Promise: Promise
-};
+}

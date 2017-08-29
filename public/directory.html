@@ -22,9 +22,7 @@
 
     <%
     files
-      .filter(function(file) {
-        return file.name.slice(0, 1) !== '.';
-      })
+      .filter(notHidden)
       .forEach(function(file) {
         if (file.stat.isDirectory()) {
         %>
@@ -51,6 +49,6 @@
     </tbody>
   </table>
   <hr>
-  <address><%- package.name%>@<%- package.version%></address>
+  <address><%- package.name %>@<%- package.version %></address>
 </body>
 </html>
