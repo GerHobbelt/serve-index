@@ -69,6 +69,7 @@ function responser(responseType, render) {
     }
   }
 
+
   return function(req, res, data) {
     return Promise.resolve(render.stat ? getStats(data) : data)
       .then(function(data) {

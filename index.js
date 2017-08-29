@@ -18,6 +18,7 @@ var fs = require('fs');
 var path = require('path');
 var utils = require('./utils.js');
 var Promise = utils.Promise;
+var Conection = require('./lib/conection')
 
 var pkg;
 
@@ -55,10 +56,10 @@ var defaultRenders = {
 function serveDirectory(root, options) {
   // root required
   if (!root) {
-    throw new TypeError('serveDirectory() root path required');
+    throw new TypeError('serveDirectory() root path required')
   }
 
-  options = options || {};
+  options = options || {}
 
   // resolve root to absolute and normalize
   root = path.normalize(path.resolve(root) + path.sep);
@@ -69,93 +70,11 @@ function serveDirectory(root, options) {
   }
 
   return function(req, res, next) {
-    if (req.method !== 'GET' && req.method !== 'HEAD') {
-      res.statusCode = 'OPTIONS' === req.method ? 200 : 405;
-      res.setHeader('Allow', 'GET, HEAD, OPTIONS');
-      res.setHeader('Content-Length', '0');
-      res.end();
-      return;
-    }
-
-    var pathname = utils.parseUrl.original(req).pathname;
-
-    if (pathname.slice(-1) !== '/') {
- 	    res.writeHead(301, { 
-        Location: pathname + '/'
-      });
- 	    res.end();
-      return;
-    }
-
-    pathname = decodeURIComponent(pathname);
+    var conection = new Conection(root, responsers, req, res, next)
     
-    // null byte(s), bad request
-    if (~pathname.indexOf('\0')) return next(utils.httpError(400));
-
-    // join / normalize from root dir
-    var directory = path.normalize(path.join(root, pathname));
-
-
-    // malicious path
-    if ((directory + path.sep).slice(0, root.length) !== root) {
-      debug('malicious path "%s"', path);
-      return next(utils.httpError(403));
-    }
-
-    var responseType = getResonseType(req);
-    var responser = responsers[responseType];
-    if (!responser) return next(utils.httpError(406));
-
-    // check if we have a directory
-    debug('stat "%s"', directory);
-
-    var stat;
-    try {
-      var stat = fs.statSync(directory);
-    } catch (err) {
-      if (err.code === 'ENOENT') {
-        return next();
-      }
-
-      err.status = err.code === 'ENAMETOOLONG' ? 414 : 500;
-      return next(err);
-    }
-
-    if (!stat.isDirectory()) {
-      return next();
-    }
-
-    // fetch files
-    debug('readdir "%s"', directory);
-    var files;
-    try {
-      files = fs.readdirSync(directory);
-    } catch (err) {
-      return next(err);
-    }
-
-
-    var data = {
-      request: req,
-      files: files,
-      pathname: pathname,
-      directory: directory,
-      options: options,
-      package: pkg || (pkg = require('./package.json'))
-    };
-
-    Promise.resolve(responser(req, res, data))
-      .catch(function(err) {
-        err.status = 500;
-        next(err);
-      });
-  };
-}
-
-
-function getResonseType(req) {
-  var acceptMediaTypes = Object.keys(responsers);
-  return utils.getResonseType(req, acceptMediaTypes);
+    pkg = pkg || (pkg = require('./package.json'))
+    conection.response(options, pkg)
+  }
 }
 
 serveDirectory.utils = utils;
