@@ -14,7 +14,7 @@
  * @private
  */
 var debug = require('debug')('serve-index');
-var utils = require('./utils.js');
+var utils = require('./lib/utils.js');
 var Conection = require('./lib/conection.js')
 var ServeDirectory = require('./lib/serve-directory.js')
 var pkg
@@ -47,11 +47,11 @@ function serveDirectory(root, options) {
   }
 }
 
-serveDirectory.utils = utils;
+serveDirectory.utils = utils
 
 /**
  * Module exports.
  * @public
  */
 
-module.exports = serveDirectory;
+module.exports = serveDirectory
