@@ -1,13 +1,7 @@
-# serve-index
+# serve-directory
 
-[![NPM Version][npm-image]][npm-url]
-[![NPM Downloads][downloads-image]][downloads-url]
-[![Linux Build][travis-image]][travis-url]
-[![Windows Build][appveyor-image]][appveyor-url]
-[![Test Coverage][coveralls-image]][coveralls-url]
-[![Gratipay][gratipay-image]][gratipay-url]
+  Serves pages that contain directory listings for a given path. forked from expressjs/serve-directory
 
-  Serves pages that contain directory listings for a given path.
 
 ## Install
 
@@ -16,16 +10,17 @@ This is a [Node.js](https://nodejs.org/en/) module available through the
 [`npm install` command](https://docs.npmjs.com/getting-started/installing-npm-packages-locally):
 
 ```sh
-$ npm install serve-index
+$ npm install serve-directory
 ```
 
 ## API
+** NOTICE: the api is not stable yet **
 
 ```js
-var serveIndex = require('serve-index')
+var serveDirectory = require('serve-directory')
 ```
 
-### serveIndex(path, options)
+### serveDirectory(path, options)
 
 Returns middlware that serves an index of the directory in the given `path`.
 
@@ -36,58 +31,118 @@ the express example).
 
 #### Options
 
-Serve index accepts these properties in the options object.
+serveDirectory accepts these properties in the options object.
 
-##### filter
+options should be a object with key(accecpt mime-type), and options for current mime-type.
 
-Apply this filter function to files. Defaults to `false`. The `filter` function
-is called for each file, with the signature `filter(filename, index, files, dir)`
-where `filename` is the name of the file, `index` is the array index, `files` is
-the array of files and `dir` is the absolute path the file is located (and thus,
-the directory the listing is for).
+like this
 
-##### hidden
+```js
+var options = {
+  'text/html': {
+    responser: [Function],
+    template: [String, Function],
+    stat: [Boolean],
+    ...
+  },
+  'application/json': {
+    responser: [Function],
+    template: [String, Function],
+    stat: [Boolean],
+    ...
+  },
+  ...
+};
 
-Display hidden (dot) files. Defaults to `false`.
 
-##### icons
+responser<Function>
+  how to response
+  responser(req, res, data), 3 arguments
 
-Display icons. Defaults to `false`.
+template<Function>
+  parse data to response body
+  responser(data), 1 argument
 
-##### stylesheet
+template<String> 
+  will make a compiled function with `loash.template` 
+  with serveDirectory.utils.render(template<String>) you can get your own template parser
 
-Optional path to a CSS stylesheet. Defaults to a built-in stylesheet.
+if `responser` is a function, `template` will be ignored.
 
-##### template
+stat<Boolean> 
+  should data.files with stat
+```
 
-Optional path to an HTML template or a function that will render a HTML
-string. Defaults to a built-in template.
+---
 
-When given a string, the string is used as a file path to load and then the
-following tokens are replaced in templates:
+if only options for `text/html`, you can also set options like this
 
-  * `{directory}` with the name of the directory.
-  * `{files}` with the HTML of an unordered list of file links.
-  * `{linked-path}` with the HTML of a link to the directory.
-  * `{style}` with the specified stylesheet and embedded images.
+```js
+var options = {
+  responser: [Function],
+  template: [String, Function],
+  stat: [Boolean],
+  ...
+}
+```
 
-When given as a function, the function is called as `template(locals, callback)`
-and it needs to invoke `callback(error, htmlString)`. The following are the
-provided locals:
+---
+set to `false` if you want delete the default responser
 
-  * `directory` is the directory being displayed (where `/` is the root).
-  * `displayIcons` is a Boolean for if icons should be rendered or not.
-  * `fileList` is a sorted array of files in the directory. The array contains
-    objects with the following properties:
-    - `name` is the relative name for the file.
-    - `stat` is a `fs.Stats` object for the file.
-  * `path` is the full filesystem path to `directory`.
-  * `style` is the default stylesheet or the contents of the `stylesheet` option.
-  * `viewName` is the view name provided by the `view` option.
+```js
+var option = {
+  'text/plain': false
+}
+``
 
-##### view
+the server not not accept `text/plain`
 
-Display mode. `tiles` and `details` are available. Defaults to `tiles`.
+## the default options
+
+```js
+var defaultOptions = {
+  'text/html': {
+    template: './public/directory.html',
+    stat: true
+  },
+  'text/plain': {
+    template: function(data) {
+      return data.files.sort().join('\n') + '\n'
+    },
+    stat: false
+  },
+  'application/json': {
+    template: function(data) {
+      return JSON.stringify(data.files.sort())
+    },
+    stat: false
+  }
+};
+```
+
+## data
+the data for rendering
+
+```js 
+{
+  files: [Array],
+  pathname: [String],
+  options: [Object]
+}
+```
+
+if options `stat` is true
+  `files` will be Array with each item like 
+```js
+{
+  name: [String],
+  stat: [fs.Stats],  // see https://nodejs.org/api/fs.html#fs_class_fs_stats
+}
+```
+
+otherwise
+  `files` will be simple Array with filenames 
+
 
 ## Examples
 
@@ -96,11 +151,10 @@ Display mode. `tiles` and `details` are available. Defaults to `tiles`.
 ```js
 var finalhandler = require('finalhandler')
 var http = require('http')
-var serveIndex = require('serve-index')
+var serveDirectory = require('serve-directory')
 var serveStatic = require('serve-static')
 
-// Serve directory indexes for public/ftp folder (with icons)
-var index = serveIndex('public/ftp', {'icons': true})
+var index = serveDirectory('public/ftp')
 
 // Serve up public/ftp folder files
 var serve = serveStatic('public/ftp')
@@ -122,12 +176,12 @@ server.listen(3000)
 
 ```js
 var express    = require('express')
-var serveIndex = require('serve-index')
+var serveDirectory = require('serve-directory')
 
 var app = express()
 
 // Serve URLs like /ftp/thing as public/ftp/thing
-app.use('/ftp', serveIndex('public/ftp', {'icons': true}))
+app.use('/ftp', serveDirectory('public/ftp'))
 app.listen()
 ```
 
@@ -136,15 +190,15 @@ app.listen()
 [MIT](LICENSE). The [Silk](http://www.famfamfam.com/lab/icons/silk/) icons
 are created by/copyright of [FAMFAMFAM](http://www.famfamfam.com/).
 
-[npm-image]: https://img.shields.io/npm/v/serve-index.svg
-[npm-url]: https://npmjs.org/package/serve-index
-[travis-image]: https://img.shields.io/travis/expressjs/serve-index/master.svg?label=linux
-[travis-url]: https://travis-ci.org/expressjs/serve-index
-[appveyor-image]: https://img.shields.io/appveyor/ci/dougwilson/serve-index/master.svg?label=windows
-[appveyor-url]: https://ci.appveyor.com/project/dougwilson/serve-index
-[coveralls-image]: https://img.shields.io/coveralls/expressjs/serve-index/master.svg
-[coveralls-url]: https://coveralls.io/r/expressjs/serve-index?branch=master
-[downloads-image]: https://img.shields.io/npm/dm/serve-index.svg
-[downloads-url]: https://npmjs.org/package/serve-index
+[npm-image]: https://img.shields.io/npm/v/serve-directory.svg
+[npm-url]: https://npmjs.org/package/serve-directory
+[travis-image]: https://img.shields.io/travis/expressjs/serve-directory/master.svg?label=linux
+[travis-url]: https://travis-ci.org/expressjs/serve-directory
+[appveyor-image]: https://img.shields.io/appveyor/ci/dougwilson/serve-directory/master.svg?label=windows
+[appveyor-url]: https://ci.appveyor.com/project/dougwilson/serve-directory
+[coveralls-image]: https://img.shields.io/coveralls/expressjs/serve-directory/master.svg
+[coveralls-url]: https://coveralls.io/r/expressjs/serve-directory?branch=master
+[downloads-image]: https://img.shields.io/npm/dm/serve-directory.svg
+[downloads-url]: https://npmjs.org/package/serve-directory
 [gratipay-image]: https://img.shields.io/gratipay/dougwilson.svg
 [gratipay-url]: https://www.gratipay.com/dougwilson/
