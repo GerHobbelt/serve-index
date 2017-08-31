@@ -37,7 +37,12 @@ function serveDirectory(root, options) {
 
   return function(req, res, next) {
     var connection = new Connection(sd, req, res, next)
-    connection.response()
+    try {
+      connection.response()
+    } catch (err) {
+      next(err)
+      return
+    }
   }
 }
 
