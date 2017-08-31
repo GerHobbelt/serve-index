@@ -15,12 +15,8 @@
  */
 var debug = require('debug')('serve-index');
 var utils = require('./lib/utils.js');
-var Conection = require('./lib/conection.js')
+var Connection = require('./lib/connection.js')
 var ServeDirectory = require('./lib/serve-directory.js')
-var pkg
-
-
-
 
 /**
  * Media types and the map for content negotiation.
@@ -40,10 +36,8 @@ function serveDirectory(root, options) {
   var sd = new ServeDirectory(root, options);
 
   return function(req, res, next) {
-    var conection = new Conection(sd.root, sd.responsers, req, res, next)
-    
-    pkg = pkg || (pkg = require('./package.json'))
-    conection.response(sd.options, pkg)
+    var connection = new Connection(sd, req, res, next)
+    connection.response()
   }
 }
 

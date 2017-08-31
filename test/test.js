@@ -380,14 +380,16 @@ describe('serveIndex(root)', function () {
 
       it('should get file list', function (done) {
         var server = createServer(fixtures, {
-          responser: function (req, res, data, next) {
-            var text = data.files
+          responser: function (req, res, files, next) {
+            var text = files
               .filter(function (f) { return /\.txt$/.test(f) })
               .sort()
             res.setHeader('Content-Type', 'text/html')
             res.end('<b>' + text.length + ' text files</b>')
           },
-          stat: false
+          data: {
+            files: true
+          }
         });
 
         request(server)
