@@ -42,7 +42,7 @@
   "scripts": {
     "update": "yarn upgrade-interactive --latest",
     "build": "cd build && sh build.sh && cd .. && npm test",
-    "publish": "npm --registry=https://registry.npmjs.org/ publish",
+    "publish-npm": "npm --registry=https://registry.npmjs.org/ publish",
     "release": "release-it",
     "test": "mocha --reporter spec --bail --check-leaks test/",
     "test-ci": "istanbul cover node_modules/mocha/bin/_mocha --report lcovonly -- --reporter spec --check-leaks test/",
