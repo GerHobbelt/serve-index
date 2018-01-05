@@ -10,3 +10,4 @@
  * Copyright(c) 2017- fisker Cheung
  * MIT Licensed
  */
+'use strict';var ServeDirectory=require('./serve-directory.js');module.exports=function(a,b){var c=new ServeDirectory(a,b);return c.middleware.bind(c)};

@@ -6,7 +6,7 @@ module.exports = {
   process: [
     {
       accept: 'text/html',
-      template: _.path.join(__dirname, '../template/directory.html')
+      template: _.path.join(__dirname, 'directory.html')
     },
     {
       accept: 'text/plain',

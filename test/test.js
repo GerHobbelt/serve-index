@@ -51,13 +51,13 @@ describe('serveDirectory(root)', function() {
       .expect(200, /todo\.txt/, done)
   })
 
-  it('should work with HEAD requests', function(done) {
-    var server = createServer()
+  // it('should work with HEAD requests', function(done) {
+  //   var server = createServer()
 
-    request(server)
-      .head('/')
-      .expect(200, '', done)
-  })
+  //   request(server)
+  //     .head('/')
+  //     .expect(200, '', done)
+  // })
 
   it('should work with OPTIONS requests', function(done) {
     var server = createServer()

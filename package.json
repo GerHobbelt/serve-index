@@ -16,10 +16,13 @@
   "devDependencies": {
     "after": "0.8.2",
     "babel-core": "^6.26.0",
+    "babel-preset-env": "^1.6.1",
+    "babel-preset-minify": "^0.2.0",
     "finalhandler": "^1.1.0",
     "istanbul": "0.4.5",
     "mocha": "2.5.3",
-    "release-it": "^5.1.2"
+    "release-it": "^5.1.2",
+    "supertest": "^3.0.0"
   },
   "files": [
     "lib",
@@ -33,7 +36,7 @@
   },
   "scripts": {
     "update": "yarn upgrade-interactive --latest",
-    "build": "cd build && sh build.sh",
+    "build": "cd build && sh build.sh && cd .. && npm test",
     "release": "release-it",
     "test": "mocha --reporter spec --bail --check-leaks test/",
     "test-ci": "istanbul cover node_modules/mocha/bin/_mocha --report lcovonly -- --reporter spec --check-leaks test/",
