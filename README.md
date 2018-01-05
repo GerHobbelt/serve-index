@@ -34,8 +34,8 @@ serveDirectory accepts these properties in the options object.
 ```js
 {
   imports: {},
-  showHiddenFiles: false,
-  useRelativeUrl: true,
+  hidden: true,
+  relative: true,
   process: [
     {
       accept: 'text/html',
@@ -95,13 +95,24 @@ see [lodash.template](https://lodash.com/docs/4.17.4#template)
 ### data
 data pass to the render function
 
-path(String): physical path
-pathname(String): decoded request pathname
-url(URL): request URL object
-method(String): request method
-responseType(String): response mine-type / content-type
+path(String):
+  physical path
+
+pathname(String):
+  decoded request pathname
+
+url(URL):
+  request URL object
+
+method(String):
+  request method
+
+responseType(String):
+  response mine-type / content-type
+
 directory(Array<fs.Stats>):
   directory stats with additional info `path` `pathname` `url`
+
 files(Array<fs.Stats>):
   directory files stats with additional info `name` `ext` `type` `url`
 
