@@ -268,6 +268,34 @@ describe('serveDirectory(root)', function() {
     })
   })
 
+  describe('with "showHiddenFiles" option', function() {
+    it('should filter hidden files by default', function (done) {
+      var server = createServer()
+
+      request(server)
+      .get('/')
+      .expect(bodyDoesNotContain('.hidden'))
+      .expect(200, done)
+    });
+
+    it('should filter hidden files', function (done) {
+      var server = createServer('test/fixtures', {'showHiddenFiles': false})
+
+      request(server)
+      .get('/')
+      .expect(bodyDoesNotContain('.hidden'))
+      .expect(200, done)
+    });
+
+    it('should not filter hidden files', function (done) {
+      var server = createServer('test/fixtures', {'showHiddenFiles': true})
+
+      request(server)
+      .get('/')
+      .expect(200, /\.hidden/, done)
+    });
+  })
+
   describe('with "template" option', function() {
     describe('when setting a custom template file', function() {
       var server
@@ -389,17 +417,39 @@ describe('serveDirectory(root)', function() {
           .expect(200, done)
       })
 
-      // it('should provide "path" local', function (done) {
-      //   var server = createServer(fixtures, {'template': function (data) {
-      //     return JSON.stringify(data.path);
-      //   }});
+      it('should provide "path" local', function (done) {
+        var server = createServer(fixtures, {
+          process: [{
+            accept: 'text/html',
+            template: function(data) {
+              return JSON.stringify(data.path);
+            }
+          }]
+        });
 
-      //   request(server)
-      //   .get('/users/')
-      //   .set('Accept', 'text/html')
-      //   .expect(200, JSON.stringify(path.join(fixtures, 'users/')), done);
-      // });
+        request(server)
+        .get('/users/')
+        .set('Accept', 'text/html')
+        .expect(200, JSON.stringify(path.join(fixtures, 'users/')), done);
+      });
     })
+
+    describe('when setting a custom template to "false"', function() {
+      it('should respond with 406', function(done) {
+        var server = createServer(fixtures, {
+          process: [{
+            accept: 'text/html',
+            template: false
+          }]
+
+        })
+
+        request(server)
+          .get('/')
+          .set('Accept', 'text/html')
+          .expect(406, done)
+      })
+    });
   })
 
   describe('when navigating to other directory', function() {

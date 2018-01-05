@@ -1,7 +1,7 @@
 {
   "name": "serve-directory",
   "description": "Serve directory listings",
-  "version": "1.9.1",
+  "version": "2.0.0-alpha1",
   "author": "fisker Cheung <lionkay@gmail.com>",
   "license": "MIT",
   "repository": "fisker/serve-directory",
@@ -20,19 +20,23 @@
     "babel-preset-minify": "^0.2.0",
     "finalhandler": "^1.1.0",
     "istanbul": "0.4.5",
-    "mocha": "2.5.3",
+    "mocha": "4.1.0",
     "release-it": "^5.1.2",
     "supertest": "^3.0.0"
   },
   "files": [
-    "lib",
-    "public/",
     "LICENSE",
     "HISTORY.md",
-    "index.js"
+    "index.js",
+    "dist/connection.js",
+    "dist/default-options.js",
+    "dist/directory.html",
+    "dist/index.js",
+    "dist/serve-directory.js",
+    "dist/utils.js"
   ],
   "engines": {
-    "node": ">= 0.8.0"
+    "node": ">= 4"
   },
   "scripts": {
     "update": "yarn upgrade-interactive --latest",
