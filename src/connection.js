@@ -35,15 +35,6 @@ class Connection {
       return
     }
 
-    if (pathname.slice(-1) !== '/') {
-      _.debug('add "/" to "%s".', pathname)
-      this.res.writeHead(301, {
-        Location: url.pathname + '/'
-      })
-      this.res.end()
-      return
-    }
-
     // null byte(s), bad request
     if (pathname.indexOf('\0') !== -1) {
       _.debug('null byte(s) in "%s", bad request.', pathname)
@@ -105,6 +96,15 @@ class Connection {
 
     if (!stats.isDirectory()) {
       this.next()
+      return
+    }
+
+    if (this.pathname.slice(-1) !== '/') {
+      _.debug('add "/" to "%s".', this.pathname)
+      this.res.writeHead(301, {
+        Location: this.url.pathname + '/'
+      })
+      this.res.end()
       return
     }
 
