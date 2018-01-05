@@ -12,18 +12,6 @@ class Connection {
     this.url = _.parseUrl.original(this.req)
   }
 
-  getDirectory(directory) {
-    // check if we have a directory
-    _.debug('stat "%s"', directory)
-
-    let stats = _.fs.statSync(directory)
-
-    return {
-      directory: directory,
-      stats: stats
-    }
-  }
-
   getMethod() {
     const method = this.req.method
     if (method !== 'GET' && method !== 'HEAD') {

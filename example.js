@@ -1,10 +1,10 @@
 const finalhandler = require('finalhandler')
 const http = require('http')
-const serveIndex = require('.')
+const serveDirectory = require('.')
 
-const index = serveIndex('test/fixtures')
+const directory = serveDirectory('test/fixtures')
 
 http.createServer(function onRequest(req, res){
   const done = finalhandler(req, res)
-  index(req, res, done)
-}).listen(5001)
+  directory(req, res, done)
+}).listen(3000)
