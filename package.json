@@ -15,12 +15,11 @@
   },
   "devDependencies": {
     "after": "0.8.2",
+    "babel-core": "^6.26.0",
     "finalhandler": "^1.1.0",
     "istanbul": "0.4.5",
     "mocha": "2.5.3",
-    "release-it": "^5.1.2",
-    "serve-static": "^1.13.1",
-    "supertest": "1.1.0"
+    "release-it": "^5.1.2"
   },
   "files": [
     "lib",
@@ -34,6 +33,7 @@
   },
   "scripts": {
     "update": "yarn upgrade-interactive --latest",
+    "build": "cd build && sh build.sh",
     "release": "release-it",
     "test": "mocha --reporter spec --bail --check-leaks test/",
     "test-ci": "istanbul cover node_modules/mocha/bin/_mocha --report lcovonly -- --reporter spec --check-leaks test/",

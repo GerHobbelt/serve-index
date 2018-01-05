@@ -1,127 +1,93 @@
-/*!
- * serve-index
- * Copyright(c) 2011 Sencha Inc.
- * Copyright(c) 2011 TJ Holowaychuk
- * Copyright(c) 2014-2015 Douglas Christopher Wilson
- * Copyright(c) 2017 fisker Cheung
- * MIT Licensed
- */
 
-'use strict'
+const _ = require('./utils.js')
+const Connection = require('./connection.js')
 
-var path = require('path')
-var utils = require('./utils.js')
+const defaultOptions = require('./default-options.js')
 
-var defaultOptions = {
-  'text/html': {
-    template: path.join(__dirname, '../public/directory.html'),
-    data: {
-      stat: true,
-      pathname: true,
-      files: {
-        name: true,
-        ext: false,
-        type: true,
-        stat: true
-      },
-      directory: false,
-      req: true,
-      options: true,
-      pkg: true,
-      options: true
-    }
-  },
-  'text/plain': {
-    template: function(files) {
-      return files.join('\n') + '\n'
-    }
-  },
-  'application/json': {
-    template: function(files) {
-      return JSON.stringify(files)
-    }
+function responser(mime, render) {
+  return function(req, res, data) {
+    const body = render(data)
+
+    // security header for content sniffing
+    res.setHeader('X-Content-Type-Options', 'nosniff')
+
+    // standard headers
+    res.setHeader('Content-Type', mime + '; charset=' + _.CHARSET)
+    res.setHeader('Content-Length', Buffer.byteLength(body, _.CHARSET))
+
+    // body
+    res.end(body, _.CHARSET)
   }
 }
 
-function ServeDirectory(root, options) {
-  // root required
-  if (!root) {
-    throw new TypeError('serveDirectory() root path required')
-  }
-
-  // resolve root to absolute and normalize
-  this.root = path.normalize(path.resolve(root) + path.sep)
-
-  this.setDefaultResponser()
-
-  this.options = this.config(options)
-}
-
-ServeDirectory.prototype.config = function(options) {
-  var sd = this
-  options = options || {}
-  var types = Object.keys(options)
-
-  if (types.length < 1) {
-    return options
-  }
-
-  if (types[0].indexOf('/') === -1) {
-    return sd.config({
-      'text/html': options
-    })
-  }
-
-  var responsers = sd.responsers
-  types.forEach(function(type) {
-    if (type.indexOf('/') === -1) {
-      throw new TypeError('unknow options: ', options)
-    } else {
-      sd.setResponser(type, options[type])
+class ServeDirectory {
+  constructor(root, options) {
+    // root required
+    // resolve root to absolute and normalize
+    try {
+      root = _.path.normalize(_.path.resolve(root) + _.path.sep)
+      _.fs.statSync(root)
+    } catch (err) {
+      throw err
     }
-  })
 
-  return options
-}
 
-ServeDirectory.prototype.setDefaultResponser = function() {
-  var sd = this
-  this.responsers = {}
-  Object.keys(defaultOptions).forEach(function(type) {
-    sd.setResponser(type, defaultOptions[type])
-  })
-}
+    this.root = root
+    this.responser = {}
+    this.options = {
+      useRelativeUrl: defaultOptions.useRelativeUrl
+    }
+    this.imports = Object.assign({}, _)
 
-ServeDirectory.prototype.setResponser = function(mime, options) {
-  if (arguments.length == 1) {
-    options = type
-    mime = 'text/html'
-  }
+    this.config(defaultOptions)
 
-  if (!options) {
-    delete this.responsers[type]
-    return
-  }
-
-  if (options.responser) {
-    this.responsers[mime] = options.responser
-    return
-  }
-
-  var type = utils.type(options)
-
-  if (type === 'Function' || type === 'String') {
-    options = {
-      template: options,
-      stat: true
+    if (options) {
+      this.config(options)
     }
   }
 
-  var render = utils.render(options.template || defaultOptions[mime].template)
+  config(options) {
+    const sd = this
 
-  this.responsers[mime] = utils.responser(mime, render)
+    if (options.showHiddenFiles) {
+      sd.options.showHiddenFiles = true
+    }
+
+    if (options.useRelativeUrl === false) {
+      sd.options.useRelativeUrl = false
+    }
+
+    if (options.imports) {
+      Object.assign(sd.imports, options.imports)
+    }
+
+    if (options.process) {
+      options.process.filter(Boolean).forEach(function(processor) {
+        processor.accept
+          .split(',')
+          .map(_.trim)
+          .filter(Boolean)
+          .forEach(function(type) {
+            if (processor.template) {
+              sd.responser[type] = responser(
+                type,
+                _.template(processor.template, {imports: sd.imports})
+              )
+            } else {
+              delete sd.responser[type]
+            }
+          })
+      })
+    }
+  }
+
+  middleware(req, res, next) {
+    try {
+      return new Connection(this, req, res, next).response()
+    } catch (err) {
+      next(err)
+    }
+  }
 }
-
-ServeDirectory.default = defaultOptions
 
 module.exports = ServeDirectory

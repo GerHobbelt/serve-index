@@ -1,20 +1,67 @@
-const CHARSET = 'utf-8'
+const nativeToString = Object.prototype.toString
+const nativeTrim = String.prototype.trim
 const path = require('path')
 const fs = require('fs')
-const accepts = require('accepts')
-const parseUrl = require('parseurl')
-const mimeLookup = require('mime-types').lookup
-const httpError = require('http-errors')
+const CHARSET = 'utf-8'
+const pkg = require('../package.json')
 const loashTemplate = require('lodash.template')
+const mimeLookup = require('mime-types').lookup
+const parseUrl = require('parseurl')
+const debug = require('debug')(pkg.name)
 
-const toString = Object.prototype.toString
-const noop = () => {}
-
-function type(obj) {
-  return toString.call(obj).slice(8, -1)
+const _ = {
+  CHARSET: CHARSET,
+  path: path,
+  fs: fs,
+  noop: noop,
+  identity: identity,
+  type: type,
+  directoryFirst: directoryFirst,
+  sortBy: sortBy,
+  notHidden: notHidden,
+  sortFile: sortFile,
+  trim: trim,
+  template: template,
+  mime: mime,
+  parseUrl: parseUrl,
+  read: read,
+  pkg: pkg,
+  debug: debug
 }
 
-function maybeFile(file) {
+function noop() {}
+
+function identity(x) {
+  return x
+}
+
+function type(x) {
+  return nativeToString.call(x).slice(8, -1)
+}
+
+function directoryFirst(a, b) {
+  return b.isDirectory() - a.isDirectory()
+}
+
+function notHidden(file) {
+  return file.name.slice(0, 1) !== '.'
+}
+
+function sortBy(key) {
+  return function(a, b) {
+    return b[key] === a[key] ? 0 : b[key] < a[key] ? 1 : -1
+  }
+}
+
+function sortFile(a, b) {
+  return directoryFirst(a, b) || sortBy('name')(a, b)
+}
+
+function trim(s) {
+  return nativeTrim.call(s)
+}
+
+function read(file) {
   try {
     return fs.readFileSync(path.resolve(file), CHARSET)
   } catch (err) {
@@ -22,86 +69,49 @@ function maybeFile(file) {
   }
 }
 
-function render(template) {
-  var templateType = type(template)
+function template(template, options) {
+  const templateType = type(template)
   if (templateType === 'Function') {
     return template
   } else if (templateType === 'String') {
-    return loashTemplate(maybeFile(template) || template, {imports: _})
+    template = read(template) || template
+    return loashTemplate(template, options || {imports: _})
   }
 
-  return noop
+  return identity
 }
 
-function responser(mime, render) {
-  return function(req, res, data) {
-    sendResponse(res, mime, render(data))
-  }
+function mime(ext) {
+  return mimeLookup(ext) || ''
 }
 
-function getResponseType(req, mediaTypes) {
-  var accept = accepts(req)
-  return accept.type(mediaTypes)
-}
+module.exports = _
 
-var pkgInfo
-function pkg() {
-  return pkgInfo || (pkgInfo = require('../package.json'))
-}
+// const accepts = require('accepts')
+// const
+//
 
-/**
- * Send a response.
- * @private
- */
+// function getResponseType(req, mediaTypes) {
+//   var accept = accepts(req)
+//   return accept.type(mediaTypes)
+// }
 
-function sendResponse(res, type, body) {
-  // security header for content sniffing
-  res.setHeader('X-Content-Type-Options', 'nosniff')
+// var pkgInfo
+// function pkg() {
+//   return pkgInfo || (pkgInfo = require('../package.json'))
+// }
 
-  // standard headers
-  res.setHeader('Content-Type', type + '; charset=' + CHARSET)
-  res.setHeader('Content-Length', Buffer.byteLength(body, CHARSET))
+// function responser(mime, render) {
+//   return function(req, res, data) {
+//     sendResponse(res, mime, render(data))
+//   }
+// }
 
-  // body
-  res.end(body, CHARSET)
-}
+// /**
+//  * Send a response.
+//  * @private
+//  */
 
-function directoryFirst(a, b) {
-  if (!b.stat || !a.stat) {
-    return 0
-  }
-  return b.stat.isDirectory() - a.stat.isDirectory()
-}
-
-function sortByName(a, b) {
-  return a.name.localeCompare(b.name)
-}
-
-function notHidden(file) {
-  return file.name.slice(0, 1) !== '.'
-}
-
-/**
- * Sort function for with directories first.
- */
-function fileSort(a, b) {
-  return directoryFirst(a, b) || sortByName(a, b)
-}
-
-function getFileMimeType(file) {
-  return mimeLookup(file) || ''
-}
-
-var _ = (module.exports = {
-  type: type,
-  render: render,
-  responser: responser,
-  getResponseType: getResponseType,
-  parseUrl: parseUrl,
-  sendResponse: sendResponse,
-  fileSort: fileSort,
-  getFileMimeType: getFileMimeType,
-  httpError: httpError,
-  notHidden: notHidden,
-  pkg: pkg
-})
+// function getFileMimeType(file) {
+//   return mimeLookup(file) || ''
+// }

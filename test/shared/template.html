@@ -2,49 +2,19 @@
 <html>
   <head>
     <title>Index of <%- pathname%></title>
-    <style><%= options.style %></style>
   </head>
   <body class="directory">
     <h1>This is the test template</h1>
     <h2>directory <%- pathname%></h2>
-    <div id="wrapper">
-      <h1>directory <%- pathname%></h1>
-      <hr>
-      <table>
-        <tbody>
-        <% if (pathname !== '/') { %>
-          <tr>
-            <td colspan="4"><a href="../" title="Parent Directory">../</a></td>
-          </tr>
-        <% } %>
-
-        <%
-        files
-          .filter(function(file) {
-            return file.name.slice(0, 1) !== '.';
-          })
-          .forEach(function(file) {
-            if (file.stat.isDirectory()) {
-            %>
-              <tr>
-                <td colspan="4"><a href="<%= encodeURIComponent(file.name) %>/" title="<%- file.name%>"><%- file.name %>/</a></td>
-              </tr>
-            <%
-            } else {
-            %>
-              <tr>
-                <td><a href="<%= encodeURIComponent(file.name) %>" title="<%- file.name %>"><%- file.name %></a></td>
-                <td><%- file.type %></td>
-                <td><%- file.stat.size %></td>
-                <td><%- file.stat.mtime.toISOString() %></td>
-              </tr>
-            <%
-            }
-          })
-          ;
+    <h2>directory <%- pathname%></h2>
+    <ul>
+    <%
+      files.forEach(function(file) {
         %>
-        </tbody>
-      </table>
-    </div>
+        <li><a href="<%- file.url %>" title="<%- file.name %>"><%- file.name %></a></li>
+        <%
+      })
+    %>
+    </ul>
   </body>
 </html>

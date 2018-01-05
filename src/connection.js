@@ -1,263 +1,192 @@
-/*!
- * serve-index
- * Copyright(c) 2011 Sencha Inc.
- * Copyright(c) 2011 TJ Holowaychuk
- * Copyright(c) 2014-2015 Douglas Christopher Wilson
- * Copyright(c) 2017- fisker Cheung
- * MIT Licensed
- */
 
-const path = require('path')
-const fs = require('fs')
-
-var path = require('path')
-var utils = require('./utils.js')
-var fs = require('fs')
-var debug = require('debug')('serve-directory')
-var defaultOptions = require('./serve-directory').default
+const _ = require('./utils.js')
+const httpError = require('http-errors')
+const accepts = require('accepts')
 
 class Connection {
   constructor(sd, req, res, next) {
-    this.root = sd.root
-    this.responsers = sd.responsers
-    this.options = sd.options
+    this.sd = sd
     this.req = req
     this.res = res
     this.next = next
-
-    this.requestPathname = utils.parseUrl.original(req).pathname
+    this.url = _.parseUrl.original(this.req)
   }
 
-  get() {
-    if (
-      !this.getMethod() ||
-      !this.getPathName() ||
-      !this.getDirectory() ||
-      !this.getResponseType() ||
-      !this.getResponser() ||
-      !this.getStat() ||
-      !this.getFiles()
-    ) {
-      return false
-    }
-
-    return this
-  }
-
-  getFiles() {
-    var directory = this.directory || this.getDirectory
-    var next = this.next
-
-    // fetch files
-    debug('readdir "%s"', directory)
-    var files
-    try {
-      files = fs.readdirSync(directory)
-    } catch (err) {
-      next(err)
-      return
-    }
-
-    return (this.files = files)
-  }
-
-  getStat() {
+  getDirectory(directory) {
     // check if we have a directory
-    debug('stat "%s"', directory)
+    _.debug('stat "%s"', directory)
 
-    var req = this.req
-    var res = this.res
-    var next = this.next
-    var directory = this.directory || this.getDirectory
+    let stats = _.fs.statSync(directory)
 
-    var stat
-    try {
-      stat = fs.statSync(directory)
-    } catch (err) {
-      if (err.code === 'ENOENT' || err.code === 'ENOTDIR') {
-        next()
-        return
-      }
+    return {
+      directory: directory,
+      stats: stats
+    }
+  }
 
-      err.status = err.code === 'ENAMETOOLONG' ? 414 : 500
-      next(err)
+  getMethod() {
+    const method = this.req.method
+    if (method !== 'GET' && method !== 'HEAD') {
+      this.res.statusCode = method === 'OPTIONS' ? 200 : 405
+      this.res.setHeader('Allow', 'GET, HEAD, OPTIONS')
+      this.res.setHeader('Content-Length', '0')
+      this.res.end()
       return
     }
 
-    if (!stat.isDirectory()) {
-      next()
+    return (this.method = method)
+  }
+
+  getPathname() {
+    const url = this.url
+    const pathname = decodeURIComponent(url.pathname)
+
+    if (!this.sd.options.showHiddenFiles && pathname.slice(0, 1) === '.') {
+      _.debug('hidden folder "%s" deny.', pathname)
+      this.next(httpError(403))
       return
     }
 
-    var pathname = utils.parseUrl.original(req).pathname
     if (pathname.slice(-1) !== '/') {
-      res.writeHead(301, {
-        Location: pathname + '/'
+      _.debug('add "/" to "%s".', pathname)
+      this.res.writeHead(301, {
+        Location: url.pathname + '/'
       })
-      res.end()
+      this.res.end()
       return
     }
-
-    return (this.stat = stat)
-  }
-
-  getResponser() {
-    var responsers = this.responsers
-    var responseType = this.responseType
-    var next = this.next
-
-    var responser = responsers[responseType]
-    if (!responser) {
-      next(utils.httpError(406))
-      return
-    }
-
-    return (this.responser = responser)
-  }
-
-  getResponseType() {
-    var responsers = this.responsers
-    var next = this.next
-
-    var acceptMediaTypes = Object.keys(responsers)
-    var responseType = utils.getResponseType(this.req, acceptMediaTypes)
-
-    if (!responseType) {
-      next(utils.httpError(406))
-      return
-    }
-
-    return (this.responseType = responseType)
-  }
-
-  getDirectory() {
-    var root = this.root
-    var pathname = this.pathname
-    var next = this.next
-
-    // join / normalize from root dir
-    var directory = path.normalize(path.join(root, pathname))
-
-    // malicious path
-    if ((directory + path.sep).slice(0, root.length) !== root) {
-      debug('malicious path "%s"', pathname)
-      next(utils.httpError(403))
-      return
-    }
-
-    return (this.directory = directory)
-  }
-
-  getPathName() {
-    var req = this.req
-    var res = this.res
-    var next = this.next
-    var requestPathname = this.requestPathname
-
-    var pathname = decodeURIComponent(requestPathname)
 
     // null byte(s), bad request
-    if (~pathname.indexOf('\0')) {
-      next(utils.httpError(400))
+    if (pathname.indexOf('\0') !== -1) {
+      _.debug('null byte(s) in "%s", bad request.', pathname)
+      this.next(httpError(400))
       return
     }
 
     return (this.pathname = pathname)
   }
 
-  getMethod() {
-    var req = this.req
-    var res = this.res
-    var method = req.method
+  getResponseType() {
+    const acceptMediaTypes = Object.keys(this.sd.responser)
+    const responseType = accepts(this.req).type(acceptMediaTypes)
 
-    if (method === 'GET' || method === 'HEAD') {
-      return (this.method = method)
-    }
-
-    if (req.method === 'OPTIONS') {
-      res.statusCode = 200
-    } else {
-      res.statusCode = 405
-    }
-
-    res.setHeader('Allow', 'GET, HEAD, OPTIONS')
-    res.setHeader('Content-Length', '0')
-    res.end()
-  }
-
-  response() {
-    if (!this.get()) {
+    if (!responseType) {
+      _.debug('mime not acceptable "%s".', responseType)
+      this.next(httpError(406))
       return
     }
 
-    var next = this.next
+    return (this.responseType = responseType)
+  }
 
-    var directory = this.directory
-    var responseType = this.responseType
+  getResponser() {
+    const responser = this.sd.responser[this.responseType]
+    return (this.responser = responser)
+  }
 
-    var opts = (this.options && this.options[responseType]) || {}
-    var dataOptions = opts.data || defaultOptions[responseType].data
+  getPath() {
+    // join / normalize from root dir
+    const path = _.path.normalize(_.path.join(this.sd.root, this.pathname))
 
-    var data
+    // malicious path
+    if ((path + _.path.sep).slice(0, this.sd.root.length) !== this.sd.root) {
+      _.debug('malicious path "%s".', this.pathname)
+      this.next(httpError(403))
+      return
+    }
+
+    return (this.path = path)
+  }
+
+  getDirectory() {
+    _.debug('get directory "%s".', this.path)
+
+    let stats
+    try {
+      stats = _.fs.statSync(this.path)
+    } catch (err) {
+      if (err.code === 'ENOENT' || err.code === 'ENOTDIR') {
+        this.next()
+        return
+      }
+
+      err.status = err.code === 'ENAMETOOLONG' ? 414 : 500
+      this.next(err)
+      return
+    }
+
+    if (!stats.isDirectory()) {
+      this.next()
+      return
+    }
+
+    stats.path = this.path
+    stats.pathname = this.pathname
+    stats.url = this.sd.options.useRelativeUrl ? '.' : this.url.pathname
+
+    return (this.directory = stats)
+  }
+
+  getFiles() {
+    _.debug('get files "%s"', this.path)
+
+    const path = this.path
+    const urlPrefix = this.sd.options.useRelativeUrl ? '' : this.url.pathname
+    let files
+
+    try {
+      files = _.fs
+        .readdirSync(path)
+        .map(function(file) {
+          const stats = _.fs.statSync(_.path.join(path, file))
+          stats.name = file
+          stats.ext = _.path.extname(file)
+          stats.type = _.mime(stats.ext)
+          stats.url =
+            urlPrefix +
+            encodeURIComponent(file) +
+            (stats.isDirectory() ? '/' : '')
+          return stats
+        })
+        .sort(_.sortFile)
+    } catch (err) {
+      this.next(err)
+      return
+    }
+
+    if (!this.sd.options.showHiddenFiles) {
+      files = files.filter(_.notHidden)
+    }
+
+    return (this.files = files)
+  }
+
+  response() {
     if (
-      utils.type(dataOptions) !== 'Object' ||
-      utils.type(dataOptions.files) !== 'Object'
+      !this.getMethod() ||
+      !this.getPathname() ||
+      !this.getResponseType() ||
+      !this.getResponser() ||
+      !this.getPath() ||
+      !this.getDirectory() ||
+      !this.getFiles()
     ) {
-      data = this.files.sort()
-    } else {
-      data = {}
-
-      if (dataOptions.files === true) {
-        data.files = this.files
-      } else {
-        data.files = this.files
-          .map(function(file) {
-            var fileObject = {}
-            fileObject.name = file
-            if (dataOptions.files.stat) {
-              fileObject.stat = fs.statSync(path.join(directory, file))
-            }
-            if (dataOptions.files.ext) {
-              fileObject.ext = path.extname(file.name)
-            }
-            if (dataOptions.files.type) {
-              fileObject.type = utils.getFileMimeType(file.type)
-            }
-            return fileObject
-          })
-          .sort(utils.fileSort)
-      }
-
-      if (dataOptions.stat) {
-        data.stat = this.stat
-      }
-
-      if (dataOptions.request) {
-        data.req = this.req
-      }
-
-      if (dataOptions.pathname) {
-        data.pathname = this.pathname
-      }
-
-      if (dataOptions.directory) {
-        data.directory = this.directory
-      }
-
-      if (dataOptions.pkg) {
-        data.pkg = utils.pkg()
-      }
-
-      if (dataOptions.options) {
-        data.options = opts
-      }
+      return
     }
 
     try {
-      this.responser(this.req, this.res, data)
+      this.responser(this.req, this.res, {
+        path: this.path,
+        pathname: this.pathname,
+        url: this.url,
+        method: this.method,
+        responseType: this.responseType,
+        directory: this.directory,
+        files: this.files
+      })
     } catch (err) {
       err.status = 500
-      next(err)
+      this.next(err)
     }
   }
 }

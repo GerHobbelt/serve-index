@@ -22,12 +22,11 @@
 
     <%
     files
-      .filter(notHidden)
       .forEach(function(file) {
-        if (file.stat.isDirectory()) {
+        if (file.isDirectory()) {
         %>
           <tr>
-            <td><a href="<%= encodeURIComponent(file.name) %>/" title="<%- file.name%>"><%- file.name %>/</a></td>
+            <td><a href="<%- file.url %>" title="<%- file.name%>"><%- file.name %>/</a></td>
             <td></td>
             <td></td>
             <td></td>
@@ -36,10 +35,10 @@
         } else {
         %>
           <tr>
-            <td><a href="<%= encodeURIComponent(file.name) %>" title="<%- file.name %>"><%- file.name %></a></td>
+            <td><a href="<%- file.url %>" title="<%- file.name %>"><%- file.name %></a></td>
             <td><%- file.type %></td>
-            <td><%- file.stat.size %></td>
-            <td><%- file.stat.mtime.toISOString() %></td>
+            <td><%- file.size %></td>
+            <td><%- file.mtime.toISOString() %></td>
           </tr>
         <%
         }
