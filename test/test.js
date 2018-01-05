@@ -15,7 +15,7 @@ var customTemplate = {
   process: [
     {
       accept: 'text/html',
-      template: path.join(__dirname, '/shared/template.html')
+      render: path.join(__dirname, '/shared/template.html')
     }
   ]
 }
@@ -56,7 +56,7 @@ describe('serveDirectory(root)', function() {
 
     request(server)
       .head('/')
-      .expect(200, '', done)
+      .expect(200, /^(undefined|)$/, done)
   })
 
   it('should work with OPTIONS requests', function(done) {
@@ -296,8 +296,8 @@ describe('serveDirectory(root)', function() {
     });
   })
 
-  describe('with "template" option', function() {
-    describe('when setting a custom template file', function() {
+  describe('with "render" option', function() {
+    describe('when setting a custom render file', function() {
       var server
       before(function() {
         server = createServer(fixtures, customTemplate)
@@ -334,13 +334,13 @@ describe('serveDirectory(root)', function() {
       })
     })
 
-    describe('when setting a custom template function', function() {
-      it('should invoke function to template', function(done) {
+    describe('when setting a custom render function', function() {
+      it('should invoke function to render', function(done) {
         var server = createServer(fixtures, {
           process: [
             {
               accept: 'text/html',
-              template: function(data) {
+              render: function(data) {
                 return 'This is a template.'
               }
             }
@@ -353,12 +353,12 @@ describe('serveDirectory(root)', function() {
           .expect(200, 'This is a template.', done)
       })
 
-      it('should handle template errors', function(done) {
+      it('should handle render errors', function(done) {
         var server = createServer(fixtures, {
           process: [
             {
               accept: 'text/html',
-              template: function(data) {
+              render: function(data) {
                 throw new Error('boom!')
               }
             }
@@ -376,7 +376,7 @@ describe('serveDirectory(root)', function() {
           process: [
             {
               accept: 'text/html',
-              template: function(data) {
+              render: function(data) {
                 return JSON.stringify(data.pathname)
               }
             }
@@ -394,7 +394,7 @@ describe('serveDirectory(root)', function() {
           process: [
             {
               accept: 'text/html',
-              template: function(data) {
+              render: function(data) {
                 return JSON.stringify(
                   data.files.map(function(file) {
                     return {
@@ -421,7 +421,7 @@ describe('serveDirectory(root)', function() {
         var server = createServer(fixtures, {
           process: [{
             accept: 'text/html',
-            template: function(data) {
+            render: function(data) {
               return JSON.stringify(data.path);
             }
           }]
@@ -439,9 +439,8 @@ describe('serveDirectory(root)', function() {
         var server = createServer(fixtures, {
           process: [{
             accept: 'text/html',
-            template: false
+            render: false
           }]
-
         })
 
         request(server)

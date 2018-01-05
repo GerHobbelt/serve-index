@@ -29,7 +29,7 @@ class Connection {
     const url = this.url
     const pathname = decodeURIComponent(url.pathname)
 
-    if (!this.sd.options.showHiddenFiles && pathname.slice(0, 1) === '.') {
+    if (this.sd.options.hidden && pathname.slice(0, 1) === '.') {
       _.debug('hidden folder "%s" deny.', pathname)
       this.next(httpError(403))
       return
@@ -110,7 +110,7 @@ class Connection {
 
     stats.path = this.path
     stats.pathname = this.pathname
-    stats.url = this.sd.options.useRelativeUrl ? '.' : this.url.pathname
+    stats.url = this.sd.options.relative ? '.' : this.url.pathname
 
     return (this.directory = stats)
   }
@@ -119,7 +119,7 @@ class Connection {
     _.debug('get files "%s"', this.path)
 
     const path = this.path
-    const urlPrefix = this.sd.options.useRelativeUrl ? '' : this.url.pathname
+    const urlPrefix = this.sd.options.relative ? '' : this.url.pathname
     let files
 
     try {
@@ -142,7 +142,7 @@ class Connection {
       return
     }
 
-    if (!this.sd.options.showHiddenFiles) {
+    if (this.sd.options.hidden) {
       files = files.filter(_.notHidden)
     }
 

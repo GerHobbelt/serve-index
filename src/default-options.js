@@ -1,22 +1,22 @@
 const _ = require('./utils.js')
 
 module.exports = {
-  showHiddenFiles: false,
-  useRelativeUrl: true,
+  hidden: true,
+  relative: true,
   process: [
     {
       accept: 'text/html',
-      template: _.path.join(__dirname, 'directory.html')
+      render: _.path.join(__dirname, 'directory.html')
     },
     {
       accept: 'text/plain',
-      template(data) {
+      render(data) {
         return data.files.map(file => file.name).join('\n') + '\n'
       }
     },
     {
       accept: 'application/json',
-      template(data) {
+      render(data) {
         return JSON.stringify(data.files.map(file => file.name))
       }
     }

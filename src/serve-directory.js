@@ -35,7 +35,8 @@ class ServeDirectory {
     this.root = root
     this.responser = {}
     this.options = {
-      useRelativeUrl: defaultOptions.useRelativeUrl
+      hidden: defaultOptions.hidden,
+      relative: defaultOptions.relative
     }
     this.imports = Object.assign({}, _)
 
@@ -49,12 +50,12 @@ class ServeDirectory {
   config(options) {
     const sd = this
 
-    if (options.showHiddenFiles) {
-      sd.options.showHiddenFiles = true
+    if (options.hidden === false) {
+      sd.options.hidden = false
     }
 
-    if (options.useRelativeUrl === false) {
-      sd.options.useRelativeUrl = false
+    if (options.relative === false) {
+      sd.options.relative = false
     }
 
     if (options.imports) {
@@ -68,10 +69,10 @@ class ServeDirectory {
           .map(_.trim)
           .filter(Boolean)
           .forEach(function(type) {
-            if (processor.template) {
+            if (processor.render) {
               sd.responser[type] = responser(
                 type,
-                _.template(processor.template, {imports: sd.imports})
+                _.template(processor.render, {imports: sd.imports})
               )
             } else {
               delete sd.responser[type]

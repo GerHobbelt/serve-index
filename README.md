@@ -39,17 +39,17 @@ serveDirectory accepts these properties in the options object.
   process: [
     {
       accept: 'text/html',
-      template: _.path.join(__dirname, 'directory.html')
+      render: _.path.join(__dirname, 'directory.html')
     },
     {
       accept: 'text/plain',
-      template(data) {
+      render(data) {
         return data.files.map(file => file.name).join('\n') + '\n'
       }
     },
     {
       accept: 'application/json',
-      template(data) {
+      render(data) {
         return JSON.stringify(data.files.map(file => file.name))
       }
     }
@@ -57,16 +57,16 @@ serveDirectory accepts these properties in the options object.
 }
 ```
 ### imports
-functions will pass to template function, see [lodash.template](https://lodash.com/docs/4.17.4#template)
+functions will pass to render function, see [lodash.template](https://lodash.com/docs/4.17.4#template)
 
 by default some usful functions will import automatically
 
 see [utils.js](https://github.com/fisker/serve-directory/tree/master/src/utils.js)
 
-### showHiddenFiles
-show hidden files(file/folder start with ".") , default `false`.
+### hidden
+hide hidden files(file/folder start with ".") , default `true`.
 
-### useRelativeUrl
+### relative
 use relative url , default `true`.
 
 ### process
@@ -75,7 +75,7 @@ array list how data should be handled
 #### accept
 mime split with `,`, space will be trimed
 
-### template
+### render
 by default we use a compiled lodash.template function to render data
 
 see [lodash.template](https://lodash.com/docs/4.17.4#template)
@@ -87,13 +87,13 @@ see [lodash.template](https://lodash.com/docs/4.17.4#template)
 
 
 #### function
-  a custom template function
+  a custom render function
 
 #### falsy value
-  remove default template function
+  remove default render function
 
 ### data
-data pass to the template function
+data pass to the render function
 
 path(String): physical path
 pathname(String): decoded request pathname
