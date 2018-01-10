@@ -1,7 +1,7 @@
-const _ = require('./utils.js')
+import _ from './utils.js'
 
-module.exports = {
-  hidden: true,
+export default {
+  hidden: false,
   relative: true,
   process: [
     {

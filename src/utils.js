@@ -1,13 +1,15 @@
+import pkg from '../package.json'
+import loashTemplate from 'lodash.template'
+import parseUrl from 'parseurl'
+import {lookup as mimeLookup} from 'mime-types'
+import debugPackage from 'debug'
+
 const nativeToString = Object.prototype.toString
 const nativeTrim = String.prototype.trim
 const path = require('path')
 const fs = require('fs')
 const CHARSET = 'utf-8'
-const pkg = require('../package.json')
-const loashTemplate = require('lodash.template')
-const mimeLookup = require('mime-types').lookup
-const parseUrl = require('parseurl')
-const debug = require('debug')(pkg.name)
+const debug = debugPackage(pkg.name)
 
 const _ = {
   CHARSET: CHARSET,
@@ -85,33 +87,4 @@ function mime(ext) {
   return mimeLookup(ext) || ''
 }
 
-module.exports = _
-
-// const accepts = require('accepts')
-// const
-//
-
-// function getResponseType(req, mediaTypes) {
-//   var accept = accepts(req)
-//   return accept.type(mediaTypes)
-// }
-
-// var pkgInfo
-// function pkg() {
-//   return pkgInfo || (pkgInfo = require('../package.json'))
-// }
-
-// function responser(mime, render) {
-//   return function(req, res, data) {
-//     sendResponse(res, mime, render(data))
-//   }
-// }
-
-// /**
-//  * Send a response.
-//  * @private
-//  */
-
-// function getFileMimeType(file) {
-//   return mimeLookup(file) || ''
-// }
+export default _

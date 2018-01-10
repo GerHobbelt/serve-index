@@ -1,6 +1,6 @@
-const ServeDirectory = require('./serve-directory.js')
+import ServeDirectory from './serve-directory.js'
 
-module.exports = function serveDirectory(root, options) {
+export default function serveDirectory(root, options) {
   const sd = new ServeDirectory(root, options)
   return sd.middleware.bind(sd)
 }

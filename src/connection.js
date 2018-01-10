@@ -1,7 +1,7 @@
 
-const _ = require('./utils.js')
-const httpError = require('http-errors')
-const accepts = require('accepts')
+import _ from './utils.js'
+import httpError from 'http-errors'
+import accepts from 'accepts'
 
 class Connection {
   constructor(sd, req, res, next) {
@@ -142,7 +142,7 @@ class Connection {
       return
     }
 
-    if (this.sd.options.hidden) {
+    if (!this.sd.options.hidden) {
       files = files.filter(_.notHidden)
     }
 
@@ -179,4 +179,4 @@ class Connection {
   }
 }
 
-module.exports = Connection
+export default Connection

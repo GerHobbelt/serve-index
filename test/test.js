@@ -22,7 +22,7 @@ var customTemplate = {
 
 describe('serveDirectory(root)', function() {
   it('should require root', function() {
-    assert.throws(serveDirectory, /Path must be a string/)
+    assert.throws(serveDirectory, TypeError)
   })
 
   it('should serve text/html without Accept header', function(done) {
@@ -268,7 +268,7 @@ describe('serveDirectory(root)', function() {
     })
   })
 
-  describe('with "showHiddenFiles" option', function() {
+  describe('with "hidden" option', function() {
     it('should filter hidden files by default', function (done) {
       var server = createServer()
 
@@ -279,7 +279,7 @@ describe('serveDirectory(root)', function() {
     });
 
     it('should filter hidden files', function (done) {
-      var server = createServer('test/fixtures', {'showHiddenFiles': false})
+      var server = createServer('test/fixtures', {'hidden': false})
 
       request(server)
       .get('/')
@@ -288,7 +288,7 @@ describe('serveDirectory(root)', function() {
     });
 
     it('should not filter hidden files', function (done) {
-      var server = createServer('test/fixtures', {'showHiddenFiles': true})
+      var server = createServer('test/fixtures', {'hidden': true})
 
       request(server)
       .get('/')

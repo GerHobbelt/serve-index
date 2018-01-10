@@ -1,8 +1,6 @@
-
-const _ = require('./utils.js')
-const Connection = require('./connection.js')
-
-const defaultOptions = require('./default-options.js')
+import _ from './utils.js'
+import Connection from './connection.js'
+import defaultOptions from './default-options.js'
 
 function responser(mime, render) {
   return function(req, res, data) {
@@ -50,12 +48,12 @@ class ServeDirectory {
   config(options) {
     const sd = this
 
-    if (options.hidden === false) {
-      sd.options.hidden = false
+    if (options.hidden === true || options.hidden === false) {
+      sd.options.hidden = options.hidden
     }
 
-    if (options.relative === false) {
-      sd.options.relative = false
+    if (options.relative === true || options.relative === false) {
+      sd.options.relative = options.relative
     }
 
     if (options.imports) {
@@ -91,4 +89,4 @@ class ServeDirectory {
   }
 }
 
-module.exports = ServeDirectory
+export default ServeDirectory

@@ -34,7 +34,7 @@ serveDirectory accepts these properties in the options object.
 ```js
 {
   imports: {},
-  hidden: true,
+  hidden: false,
   relative: true,
   process: [
     {
@@ -64,7 +64,7 @@ by default some usful functions will import automatically
 see [utils.js](https://github.com/fisker/serve-directory/tree/master/src/utils.js)
 
 ### hidden
-hide hidden files(file/folder start with ".") , default `true`.
+show hidden files(file/folder start with ".") , default `false`.
 
 ### relative
 use relative url , default `true`.

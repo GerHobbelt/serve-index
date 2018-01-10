@@ -16,19 +16,21 @@
   "devDependencies": {
     "after": "^0.8.2",
     "babel-core": "^6.26.0",
+    "babel-plugin-add-module-exports": "^0.2.1",
     "babel-preset-env": "^1.6.1",
     "babel-preset-minify": "^0.2.0",
     "finalhandler": "^1.1.0",
     "istanbul": "0.4.5",
     "mocha": "4.1.0",
+    "prettier": "^1.9.2",
     "release-it": "^5.1.2",
     "serve-static": "^1.13.1",
     "supertest": "^3.0.0"
   },
+  "main": "dist/index.js",
   "files": [
     "LICENSE",
     "HISTORY.md",
-    "index.js",
     "dist/connection.js",
     "dist/default-options.js",
     "dist/directory.html",
