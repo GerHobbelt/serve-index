@@ -45,9 +45,12 @@
     "update": "yarn upgrade-interactive --latest",
     "build": "cd build && sh build.sh && cd .. && npm test",
     "publish-npm": "npm --registry=https://registry.npmjs.org/ publish",
-    "release": "release-it",
+    "release": "npm run build && np",
     "test": "mocha --reporter spec --bail --check-leaks test/",
     "test-ci": "istanbul cover node_modules/mocha/bin/_mocha --report lcovonly -- --reporter spec --check-leaks test/",
     "test-cov": "istanbul cover node_modules/mocha/bin/_mocha -- --reporter dot --check-leaks test/"
+  },
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org/"
   }
 }
