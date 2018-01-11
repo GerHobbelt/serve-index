@@ -29,7 +29,6 @@ class ServeDirectory {
       throw err
     }
 
-
     this.root = root
     this.responser = {}
     this.options = {
