@@ -1,7 +1,6 @@
 # serve-directory
 
-  Serves pages that contain directory listings for a given path. forked from expressjs/serve-directory
-
+Serves pages that contain directory listings for a given path. forked from expressjs/serve-directory
 
 ## Install
 
@@ -17,6 +16,10 @@ const serveDirectory = require('serve-directory')
 const directory = serveDirectory('wwwroot', options)
 ```
 
+### Serve directory indexes with vanilla node.js http server
+
+see [example.js](https://github.com/fisker/serve-directory/tree/master/example.js)
+
 ### serveDirectory(path, options)
 
 Returns middlware that serves an index of the directory in the given `path`.
@@ -26,11 +29,12 @@ with a `path` of `'public'` will look at `'public/some/dir'`. If you are using
 something like `express`, you can change the URL "base" with `app.use` (see
 the express example).
 
-### Options
+### options
 
 serveDirectory accepts these properties in the options object.
 
 ### example (default)
+
 ```js
 {
   imports: {},
@@ -56,69 +60,72 @@ serveDirectory accepts these properties in the options object.
   ]
 }
 ```
-### imports
-functions will pass to render function, see [lodash.template](https://lodash.com/docs/4.17.4#template)
 
-by default some usful functions will import automatically
+### options.imports
+
+An object to import into the template as free variables., see [lodash.template](https://lodash.com/docs/4.17.4#template)
+
+by default some useful functions will import automatically
 
 see [utils.js](https://github.com/fisker/serve-directory/tree/master/src/utils.js)
 
-### hidden
-show hidden files(file/folder start with ".") , default `false`.
+### options.hidden
 
-### relative
-use relative url , default `true`.
+Show hidden files(file/folder start with ".") , default `false`.
 
-### process
-array list how data should be handled
+### options.relative
 
-#### accept
+Use relative url , default `true`.
+
+### options.process
+
+Array list how data should be handled
+
+#### options.accept
+
 mime split with `,`, space will be trimed
 
-### render
+### options.render
+
 by default we use a compiled lodash.template function to render data
 
 see [lodash.template](https://lodash.com/docs/4.17.4#template)
 
-#### string
+    string
 
-  a path to a template file
-  a template string
+      a path to a template file
+      a template string
 
+    function
+      a custom render function
 
-#### function
-  a custom render function
-
-#### falsy value
-  remove default render function
+    falsy value
+      remove default render function
 
 ### data
+
 data pass to the render function
 
 path(String):
-  physical path
+physical path
 
 pathname(String):
-  decoded request pathname
+decoded request pathname
 
 url(URL):
-  request URL object
+request URL object
 
 method(String):
-  request method
+request method
 
 responseType(String):
-  response mine-type / content-type
+response mine-type / content-type
 
 directory(Array<fs.Stats>):
-  directory stats with additional info `path` `pathname` `url`
+directory stats with additional info `path` `pathname` `url`
 
 files(Array<fs.Stats>):
-  directory files stats with additional info `name` `ext` `type` `url`
-
-
-### Serve directory indexes with vanilla node.js http server
- see [example.js](https://github.com/fisker/serve-directory/tree/master/example.js)
+directory files stats with additional info `name` `ext` `type` `url`
 
 ## License
 
