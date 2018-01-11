@@ -1,13 +1,265 @@
-/*!
+/*
  * serve-index
  * Copyright(c) 2011 Sencha Inc.
  * Copyright(c) 2011 TJ Holowaychuk
  * Copyright(c) 2014-2015 Douglas Christopher Wilson
- */
-/*!
  *
  * serve-directory
  * Copyright(c) 2017- fisker Cheung
  * MIT Licensed
  */
-"use strict";Object.defineProperty(exports,"__esModule",{value:!0});var _createClass=function(){function a(a,b){for(var c,d=0;d<b.length;d++)c=b[d],c.enumerable=c.enumerable||!1,c.configurable=!0,"value"in c&&(c.writable=!0),Object.defineProperty(a,c.key,c)}return function(b,c,d){return c&&a(b.prototype,c),d&&a(b,d),b}}(),_utils=require("./utils.js"),_utils2=_interopRequireDefault(_utils),_httpErrors=require("http-errors"),_httpErrors2=_interopRequireDefault(_httpErrors),_accepts=require("accepts"),_accepts2=_interopRequireDefault(_accepts);function _interopRequireDefault(a){return a&&a.__esModule?a:{default:a}}function _classCallCheck(a,b){if(!(a instanceof b))throw new TypeError("Cannot call a class as a function")}var Connection=function(){function a(b,c,d,e){_classCallCheck(this,a),this.sd=b,this.req=c,this.res=d,this.next=e,this.url=_utils2.default.parseUrl.original(this.req)}return _createClass(a,[{key:"getMethod",value:function(){var a=this.req.method;return"GET"!==a&&"HEAD"!==a?(this.res.statusCode="OPTIONS"===a?200:405,this.res.setHeader("Allow","GET, HEAD, OPTIONS"),this.res.setHeader("Content-Length","0"),void this.res.end()):this.method=a}},{key:"getPathname",value:function(){var a=this.url,b=decodeURIComponent(a.pathname);return this.sd.options.hidden&&"."===b.slice(0,1)?(_utils2.default.debug("hidden folder \"%s\" deny.",b),void this.next((0,_httpErrors2.default)(403))):-1===b.indexOf("\0")?this.pathname=b:(_utils2.default.debug("null byte(s) in \"%s\", bad request.",b),void this.next((0,_httpErrors2.default)(400)))}},{key:"getResponseType",value:function(){var a=Object.keys(this.sd.responser),b=(0,_accepts2.default)(this.req).type(a);return b?this.responseType=b:(_utils2.default.debug("mime not acceptable \"%s\".",b),void this.next((0,_httpErrors2.default)(406)))}},{key:"getResponser",value:function(){var a=this.sd.responser[this.responseType];return this.responser=a}},{key:"getPath",value:function(){var a=_utils2.default.path.normalize(_utils2.default.path.join(this.sd.root,this.pathname));return(a+_utils2.default.path.sep).slice(0,this.sd.root.length)===this.sd.root?this.path=a:(_utils2.default.debug("malicious path \"%s\".",this.pathname),void this.next((0,_httpErrors2.default)(403)))}},{key:"getDirectory",value:function(){_utils2.default.debug("get directory \"%s\".",this.path);var a;try{a=_utils2.default.fs.statSync(this.path)}catch(a){return"ENOENT"===a.code||"ENOTDIR"===a.code?void this.next():(a.status="ENAMETOOLONG"===a.code?414:500,void this.next(a))}return a.isDirectory()?"/"===this.pathname.slice(-1)?(a.path=this.path,a.pathname=this.pathname,a.url=this.sd.options.relative?".":this.url.pathname,this.directory=a):(_utils2.default.debug("add \"/\" to \"%s\".",this.pathname),this.res.writeHead(301,{Location:this.url.pathname+"/"}),void this.res.end()):void this.next()}},{key:"getFiles",value:function(){_utils2.default.debug("get files \"%s\"",this.path);var a,b=this.path,c=this.sd.options.relative?"":this.url.pathname;try{a=_utils2.default.fs.readdirSync(b).map(function(a){var d=_utils2.default.fs.statSync(_utils2.default.path.join(b,a));return d.name=a,d.ext=_utils2.default.path.extname(a),d.type=_utils2.default.mime(d.ext),d.url=c+encodeURIComponent(a)+(d.isDirectory()?"/":""),d}).sort(_utils2.default.sortFile)}catch(a){return void this.next(a)}return this.sd.options.hidden||(a=a.filter(_utils2.default.notHidden)),this.files=a}},{key:"response",value:function(){if(this.getMethod()&&this.getPathname()&&this.getResponseType()&&this.getResponser()&&this.getPath()&&this.getDirectory()&&this.getFiles())try{this.responser(this.req,this.res,{path:this.path,pathname:this.pathname,url:this.url,method:this.method,responseType:this.responseType,directory:this.directory,files:this.files})}catch(a){a.status=500,this.next(a)}}}]),a}();exports.default=Connection,module.exports=exports["default"];
+'use strict'
+
+Object.defineProperty(exports, '__esModule', {
+  value: true
+})
+
+var _createClass = (function() {
+  function defineProperties(target, props) {
+    for (var i = 0; i < props.length; i++) {
+      var descriptor = props[i]
+      descriptor.enumerable = descriptor.enumerable || false
+      descriptor.configurable = true
+      if ('value' in descriptor) descriptor.writable = true
+      Object.defineProperty(target, descriptor.key, descriptor)
+    }
+  }
+  return function(Constructor, protoProps, staticProps) {
+    if (protoProps) defineProperties(Constructor.prototype, protoProps)
+    if (staticProps) defineProperties(Constructor, staticProps)
+    return Constructor
+  }
+})()
+
+var _utils = require('./utils.js')
+
+var _utils2 = _interopRequireDefault(_utils)
+
+var _httpErrors = require('http-errors')
+
+var _httpErrors2 = _interopRequireDefault(_httpErrors)
+
+var _accepts = require('accepts')
+
+var _accepts2 = _interopRequireDefault(_accepts)
+
+function _interopRequireDefault(obj) {
+  return obj && obj.__esModule ? obj : {default: obj}
+}
+
+function _classCallCheck(instance, Constructor) {
+  if (!(instance instanceof Constructor)) {
+    throw new TypeError('Cannot call a class as a function')
+  }
+}
+
+var Connection = (function() {
+  function Connection(sd, req, res, next) {
+    _classCallCheck(this, Connection)
+
+    this.sd = sd
+    this.req = req
+    this.res = res
+    this.next = next
+    this.url = _utils2.default.parseUrl.original(this.req)
+  }
+
+  _createClass(Connection, [
+    {
+      key: 'getMethod',
+      value: function getMethod() {
+        var method = this.req.method
+        if (method !== 'GET' && method !== 'HEAD') {
+          this.res.statusCode = method === 'OPTIONS' ? 200 : 405
+          this.res.setHeader('Allow', 'GET, HEAD, OPTIONS')
+          this.res.setHeader('Content-Length', '0')
+          this.res.end()
+          return
+        }
+
+        return (this.method = method)
+      }
+    },
+    {
+      key: 'getPathname',
+      value: function getPathname() {
+        var url = this.url
+        var pathname = decodeURIComponent(url.pathname)
+
+        if (this.sd.options.hidden && pathname.slice(0, 1) === '.') {
+          _utils2.default.debug('hidden folder "%s" deny.', pathname)
+          this.next((0, _httpErrors2.default)(403))
+          return
+        }
+
+        // null byte(s), bad request
+        if (pathname.indexOf('\0') !== -1) {
+          _utils2.default.debug('null byte(s) in "%s", bad request.', pathname)
+          this.next((0, _httpErrors2.default)(400))
+          return
+        }
+
+        return (this.pathname = pathname)
+      }
+    },
+    {
+      key: 'getResponseType',
+      value: function getResponseType() {
+        var acceptMediaTypes = Object.keys(this.sd.responser)
+        var responseType = (0, _accepts2.default)(this.req).type(
+          acceptMediaTypes
+        )
+
+        if (!responseType) {
+          _utils2.default.debug('mime not acceptable "%s".', responseType)
+          this.next((0, _httpErrors2.default)(406))
+          return
+        }
+
+        return (this.responseType = responseType)
+      }
+    },
+    {
+      key: 'getResponser',
+      value: function getResponser() {
+        var responser = this.sd.responser[this.responseType]
+        return (this.responser = responser)
+      }
+    },
+    {
+      key: 'getPath',
+      value: function getPath() {
+        // join / normalize from root dir
+        var path = _utils2.default.path.normalize(
+          _utils2.default.path.join(this.sd.root, this.pathname)
+        )
+
+        // malicious path
+        if (
+          (path + _utils2.default.path.sep).slice(0, this.sd.root.length) !==
+          this.sd.root
+        ) {
+          _utils2.default.debug('malicious path "%s".', this.pathname)
+          this.next((0, _httpErrors2.default)(403))
+          return
+        }
+
+        return (this.path = path)
+      }
+    },
+    {
+      key: 'getDirectory',
+      value: function getDirectory() {
+        _utils2.default.debug('get directory "%s".', this.path)
+
+        var stats = void 0
+        try {
+          stats = _utils2.default.fs.statSync(this.path)
+        } catch (err) {
+          if (err.code === 'ENOENT' || err.code === 'ENOTDIR') {
+            this.next()
+            return
+          }
+
+          err.status = err.code === 'ENAMETOOLONG' ? 414 : 500
+          this.next(err)
+          return
+        }
+
+        if (!stats.isDirectory()) {
+          this.next()
+          return
+        }
+
+        if (this.pathname.slice(-1) !== '/') {
+          _utils2.default.debug('add "/" to "%s".', this.pathname)
+          this.res.writeHead(301, {
+            Location: this.url.pathname + '/'
+          })
+          this.res.end()
+          return
+        }
+
+        stats.path = this.path
+        stats.pathname = this.pathname
+        stats.url = this.sd.options.relative ? '.' : this.url.pathname
+
+        return (this.directory = stats)
+      }
+    },
+    {
+      key: 'getFiles',
+      value: function getFiles() {
+        _utils2.default.debug('get files "%s"', this.path)
+
+        var path = this.path
+        var urlPrefix = this.sd.options.relative ? '' : this.url.pathname
+        var files = void 0
+
+        try {
+          files = _utils2.default.fs
+            .readdirSync(path)
+            .map(function(file) {
+              var stats = _utils2.default.fs.statSync(
+                _utils2.default.path.join(path, file)
+              )
+              stats.name = file
+              stats.ext = _utils2.default.path.extname(file)
+              stats.type = _utils2.default.mime(stats.ext)
+              stats.url =
+                urlPrefix +
+                encodeURIComponent(file) +
+                (stats.isDirectory() ? '/' : '')
+              return stats
+            })
+            .sort(_utils2.default.sortFile)
+        } catch (err) {
+          this.next(err)
+          return
+        }
+
+        if (!this.sd.options.hidden) {
+          files = files.filter(_utils2.default.notHidden)
+        }
+
+        return (this.files = files)
+      }
+    },
+    {
+      key: 'response',
+      value: function response() {
+        if (
+          !this.getMethod() ||
+          !this.getPathname() ||
+          !this.getResponseType() ||
+          !this.getResponser() ||
+          !this.getPath() ||
+          !this.getDirectory() ||
+          !this.getFiles()
+        ) {
+          return
+        }
+
+        try {
+          this.responser(this.req, this.res, {
+            path: this.path,
+            pathname: this.pathname,
+            url: this.url,
+            method: this.method,
+            responseType: this.responseType,
+            directory: this.directory,
+            files: this.files
+          })
+        } catch (err) {
+          err.status = 500
+          this.next(err)
+        }
+      }
+    }
+  ])
+
+  return Connection
+})()
+
+exports.default = Connection
+module.exports = exports['default']

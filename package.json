@@ -48,7 +48,7 @@
     "update": "yarn upgrade-interactive --latest",
     "build": "cd build && sh build.sh",
     "publish-npm": "npm --registry=https://registry.npmjs.org/ publish",
-    "release": "npm run build && np",
+    "release": "yarn build && np",
     "test": "mocha --reporter spec --bail --check-leaks test/",
     "test-ci":
       "istanbul cover node_modules/mocha/bin/_mocha --report lcovonly -- --reporter spec --check-leaks test/",
