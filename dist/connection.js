@@ -99,7 +99,7 @@ var Connection = (function() {
           return
         }
 
-        return (this.pathname = pathname)
+        return (this.pathname = pathname.replace(/\/+/g, '/'))
       }
     },
     {

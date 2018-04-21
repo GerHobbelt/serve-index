@@ -41,7 +41,7 @@ class Connection {
       return
     }
 
-    return (this.pathname = pathname)
+    return (this.pathname = pathname.replace(/\/+/g, '/'))
   }
 
   getResponseType() {
