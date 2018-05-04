@@ -13,12 +13,9 @@ buildJS()
 buildTemplate()
 
 function buildTemplate() {
-  let content = fs.readFileSync(
-    path.join(SOURCE_DIR, 'directory.html'),
-    CHARSET
-  )
+  let content = fs.readFileSync(path.join(SOURCE_DIR, 'directory.ejs'), CHARSET)
   content = content.replace(/>\s*</g, '><')
-  fs.writeFileSync(path.join(DIST_DIR, 'directory.html'), content)
+  fs.writeFileSync(path.join(DIST_DIR, 'directory.ejs'), content)
 }
 
 function buildJS() {

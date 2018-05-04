@@ -28,7 +28,7 @@ exports.default = {
   process: [
     {
       accept: 'text/html',
-      render: _utils2.default.path.join(__dirname, 'directory.html')
+      render: _utils2.default.path.join(__dirname, 'directory.ejs')
     },
     {
       accept: 'text/plain',
