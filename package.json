@@ -25,7 +25,6 @@
     "mocha": "5.1.1",
     "prettier": "^1.12.1",
     "pretty-quick": "^1.4.1",
-    "release-it": "^7.4.1",
     "serve-static": "^1.13.2",
     "supertest": "^3.0.0"
   },
@@ -47,8 +46,7 @@
     "precommit": "pretty-quick --staged",
     "update": "yarn upgrade-interactive --latest",
     "build": "cd build && sh build.sh",
-    "publish-npm": "npm --registry=https://registry.npmjs.org/ publish",
-    "release": "yarn build && np",
+    "release": "yarn build && np --no-yarn --no-cleanup",
     "test": "mocha --reporter spec --bail --check-leaks test/",
     "test-ci":
       "istanbul cover node_modules/mocha/bin/_mocha --report lcovonly -- --reporter spec --check-leaks test/",

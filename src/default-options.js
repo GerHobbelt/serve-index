@@ -6,7 +6,7 @@ export default {
   process: [
     {
       accept: 'text/html',
-      render: _.path.join(__dirname, 'directory.html')
+      render: _.path.join(__dirname, 'directory.ejs')
     },
     {
       accept: 'text/plain',
